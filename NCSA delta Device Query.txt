@@ -1,0 +1,21 @@
+NCSA delta Device Query
+Devices 0: "NVIDIA A40"
+Major compute capability: 8
+Minor compute capability: 6
+Number of multiprocesors: 84
+GPU architecture: NVIDIA Ampere GPU
+Number of cores: 10752
+Concurrent copy and excution: Yes
+CUDART_VERSION: 11080
+Maximum sizes of each dimension of a grid (x, y, z): 2147483647 x 65535 x 65535
+Maximum sizes of each dimension of a block (x, y, z): 1024 x 1024 x 64
+Maximum number of threads per block: 1024 threads
+(Maximum number of threads per SM): 1536 threads
+Warp size: 32 threads
+Total amount of global memory: 44.4 GB
+Total amount of constant memory: 64.0 KB
+Maximum amount of shared memory available per block: 48.0KB
+(Maximum amount of shared memory available per SM): 100.0KB
+Maximum memory pitch: 2.0 GB
+Total numberof registers available per block: 65536
+(Total number of registers available per SM): 65536
