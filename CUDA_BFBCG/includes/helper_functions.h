@@ -28,30 +28,30 @@
 //Generate random SPD dense matrix
 // N is matrix size
 // SPD <- mtxA * mtxA'
-float* generateSPD_DenseMatrix(int N);
+double* generateSPD_DenseMatrix(int N);
 
 // N is matrix size
-float* generate_TriDiagMatrix(int N);
+double* generate_TriDiagMatrix(int N);
 
 //Initialize initial guess matrix as 0.
-void initilizeZero(float mtxSolX_h[], int numOfRow, int numOfClm);
+void initilizeZero(double mtxSolX_h[], int numOfRow, int numOfClm);
 
 //Initialize given matrix as 1.
-void initilizeOne(float mtxB_h[], int numOfRow, int numOfClm);
+void initilizeOne(double mtxB_h[], int numOfRow, int numOfClm);
 
 //Dense Diagonally doinat SPD matrix 
-float* generateWellConditoinedSPDMatrix(int N);
+double* generateWellConditoinedSPDMatrix(int N);
 
 
-void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N);
+void validateSol(const double *mtxA_h, const double* x_h, double* rhs, int N);
 
 
 
 //Breakdown Free Block Conjugate Gradient (BFBCG) function
-//Input: float* mtxA_d, float* mtxB_d, float* mtxSolX_d, int numOfA, int numOfColX
+//Input: double* mtxA_d, double* mtxB_d, double* mtxSolX_d, int numOfA, int numOfColX
 //Process: Solve AX = B where A is sparse matrix, X is solutoinn column vectors and B is given column vectors
-//Output: float* mtxSolX_d
-void bfbcg(CSRMatrix &csrMtxA, float* mtxSolX_d, float* mtxB_d, int numOfA, int numOfColX);
+//Output: double* mtxSolX_d
+void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, int numOfColX);
 
 
 
@@ -59,68 +59,68 @@ void bfbcg(CSRMatrix &csrMtxA, float* mtxSolX_d, float* mtxB_d, int numOfA, int 
 
 //Sub-funcstions for BFBCG implementation
 
-//Input: cublasHandle_t cublasHandler, float* matrix Residual, int number of row, int number of column
+//Input: cublasHandle_t cublasHandler, double* matrix Residual, int number of row, int number of column
 //Process: Extracts the first column vector from the residual matrix,
 // 			Calculate dot product of the first column vector, then compare sqare root of dot product with Threashold
 //Output: boolean
 bool checkStop(cublasHandle_t cublasHandler, double *mtxR_d, int numOfRow, int numOfClm, double const threshold);
 
-//Input: cublasHandle_t cublasHandler, float * mtxR_d, int numOfRow, int numOfClm, float* residual as answer
+//Input: cublasHandle_t cublasHandler, double * mtxR_d, int numOfRow, int numOfClm, double* residual as answer
 //Process: Extrace the first column vector from the Residual mtrix and calculate dot product
-//Output: float& rsdl_h
-void calculateResidual(cublasHandle_t cublasHandler, float * mtxR_d, int numOfRow, int numOfClm, float& rsdl_h);
+//Output: double& rsdl_h
+void calculateResidual(cublasHandle_t cublasHandler, double * mtxR_d, int numOfRow, int numOfClm, double& rsdl_h);
 
 
 //Inverse funtion with sub functions
-//Input: float* matrix A, float* matrix A inverse, int N, number of Row or Column
+//Input: double* matrix A, double* matrix A inverse, int N, number of Row or Column
 //Process: Inverse matrix
 //Output: lfoat mtxQPT_d
-void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, float* mtxA_d, float* mtxA_inv_d, int N);
+void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, double* mtxA_d, double* mtxA_inv_d, int N);
 
 
-//Input: float* identity matrix, int numer of Row, Column
+//Input: double* identity matrix, int numer of Row, Column
 //Process: Creating identity matrix with number of N
-//Output: float* mtxI
+//Output: double* mtxI
 __global__ void identity_matrix(double* mtxI_d, int N);
 
-//Input: float* identity matrix, int N, which is numer of Row or Column
+//Input: double* identity matrix, int N, which is numer of Row or Column
 //Process: Call the kernel to create identity matrix with number of N
-//Output: float* mtxI
+//Output: double* mtxI
 void createIdentityMtx(double* mtxI_d, int N);
 
 
 
 
-//Input: const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClmB, float * dnxMtxC_d
+//Input: const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmB, double * dnxMtxC_d
 //Process: Matrix Multiplication Sparse matrix and Dense matrix
 //Output: dnsMtxC_d, dense matrix C in device
-void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClmsB, float * dnsMtxC_d);
+void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d);
 
 
-//Input: float *dnsMtxB_d, const CSRMatrix &csrMtx, float *dnsMtxX_d, int numClmB, float * dnxMtxC_d
+//Input: double *dnsMtxB_d, const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmB, double * dnxMtxC_d
 //Process: perform C = C - AX
 //Output: dnsMtxC_d, dense matrix C in device
-void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d);
+void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d);
 
 
 
 
 
-//Input: float* mtxY_hat_d, float* mtxZ, int number of Row, int number Of column, int & currentRank
+//Input: double* mtxY_hat_d, double* mtxZ, int number of Row, int number Of column, int & currentRank
 //Process: the function extracts orthonormal set from the matrix Z
-//Output: float* mtxY_hat, the orthonormal set of matrix Z.
-void orth(float** mtxY_hat_d, float* mtxZ_d, int numOfRow, int numOfClm, int &currentRank);
+//Output: double* mtxY_hat, the orthonormal set of matrix Z.
+void orth(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank);
 
 //Input: cusolverDnHandler, int number of row, int number of column, int leading dimensino, 
-//		 float* matrix A, float* matrix U, float* vector singlluar values, float* matrix V tranpose
+//		 double* matrix A, double* matrix U, double* vector singlluar values, double* matrix V tranpose
 //Process: Singluar Value Decomposion
-//Output: float* Matrix U, float* singular value vectors, float* Matrix V transpose
-void SVD_Decmp(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, float* mtxA_d, float* mtxU_d, float* sngVals_d, float*mtxVT_d);
+//Output: double* Matrix U, double* singular value vectors, double* Matrix V transpose
+void SVD_Decmp(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, double* mtxA_d, double* mtxU_d, double* sngVals_d, double*mtxVT_d);
 
-//Input: singluar values, int currnet rank, float threashould
+//Input: singluar values, int currnet rank, double threashould
 //Process: Check eigenvalues are greater than threashould, then set new rank
 //Output: int newRank
-int setRank(float* sngVals_d, int currentRank, float threashold);
+int setRank(double* sngVals_d, int currentRank, double threashold);
 
 
 
@@ -128,66 +128,66 @@ int setRank(float* sngVals_d, int currentRank, float threashold);
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix multiplication matrix A and matrix B
 //Result: matrix C as a result
 void multiply_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA);
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix multiplication matrix -A and matrix B
 //Result: matrix C as a result
 void multiply_ngt_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA);
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix C <-  matrix A * matrix B + matrixC with overwrite
 //Result: matrix C as a result
 void multiply_sum_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA);
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int number of Row, int number of column
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int number of Row, int number of column
 //Process: matrix multiplication matrix A' * matrix A
 //Result: matrix C as a result with square matrix
 void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxC_d, int numOfRow, int numOfClm);
 
 //Input matrix should be column major, overload function
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int number of Row A, int number of column A, int number of cloumn B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int number of Row A, int number of column A, int number of cloumn B
 //Process: matrix multiplication matrix A' * matrix A
 //Result: matrix C as a result with square matrix
 void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfClmA, int numOfClmB);
 
-//Input: cublasHandle_t cublasHandler, float* mtxB_d, float* mtxA_d, float* mtxSolX_d, int numOfRowA, int numOfClmB
+//Input: cublasHandle_t cublasHandler, double* mtxB_d, double* mtxA_d, double* mtxSolX_d, int numOfRowA, int numOfClmB
 //Process: Perform R = 
-//Output: float* mtxB_d as a result with overwritten
+//Output: double* mtxB_d as a result with overwritten
 void subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfClmA, int numOfClmB);
 
 
-//Input: cublasHandler_t cublasHandler, float* matrix X, int number of row, int number of column
+//Input: cublasHandler_t cublasHandler, double* matrix X, int number of row, int number of column
 //Process: the function allocate new memory space and tranpose the mtarix X
-//Output: float* matrix X transpose
-float* transpose_Den_Mtx(cublasHandle_t cublasHandler, float* mtxX_d, int numOfRow, int numOfClm);
+//Output: double* matrix X transpose
+double* transpose_Den_Mtx(cublasHandle_t cublasHandler, double* mtxX_d, int numOfRow, int numOfClm);
 
-//Input: float* matrix V, int number of Row and Column, int current rank
+//Input: double* matrix V, int number of Row and Column, int current rank
 //Process: the functions truncates the matrix V with current rank
-//Output: float* matrix V truncated.
-float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank);
+//Output: double* matrix V truncated.
+double* truncate_Den_Mtx(double* mtxV_d, int numOfN, int currentRank);
 
-//Input: float* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
+//Input: double* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
 //Process: the kernel normalize each column vector of matrix Y in 2 norm
-//Output: float* mtxY_d, which will be updated as normalized matrix Y hat.
-__global__ void normalizeClmVec(float* mtxY_d, int numOfRow, int numOfCol);
+//Output: double* mtxY_d, which will be updated as normalized matrix Y hat.
+__global__ void normalizeClmVec(double* mtxY_d, int numOfRow, int numOfCol);
 
 
-//Input: float* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
+//Input: double* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
 //Process: the function calls kernel and normalize each column vector 
-//Output: float* mtxY_d, which will be updated as normalized matrix Y hat.
-void normalize_Den_Mtx(float* mtxY_d, int numOfRow, int numOfCol);
+//Output: double* mtxY_d, which will be updated as normalized matrix Y hat.
+void normalize_Den_Mtx(double* mtxY_d, int numOfRow, int numOfCol);
 
 //Overload function
-void normalize_Den_Mtx(cublasHandle_t cublasHandler, float* mtxY_d, int numOfRow, int numOfCol);
+void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRow, int numOfCol);
 
 
 
@@ -196,40 +196,40 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, float* mtxY_d, int numOfRow
 
 
 
-//Input: float* matrix A, int number of Row, int number Of Column
+//Input: double* matrix A, int number of Row, int number Of Column
 //Process: Compute condition number and check whther it is ill-conditioned or not.
-//Output: float condition number
+//Output: double condition number
 double computeConditionNumber(double* mtxA_d, int numOfRow, int numOfClm);
 
-//Input: cusolverDnHandle_t cusolverHandler, int number of row, int number of column, int leading dimension, float* matrix A
+//Input: cusolverDnHandle_t cusolverHandler, int number of row, int number of column, int leading dimension, double* matrix A
 //Process: Extract eigenvalues with full SVD
-//Output: float* sngVals_d, singular values in device in column vector
+//Output: double* sngVals_d, singular values in device in column vector
 double* extractSngVals(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, double* mtxA_d);
 
 
-//Input: CSRMatrix &csrMtx, int numOfA, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d
+//Input: CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d
 //Process: perform R = B - AX, then calculate the first column vector 2 norms
-//Output: float twoNorms
-float validateBFBCG(const CSRMatrix &csrMtx, int numOfA, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d);
+//Output: double twoNorms
+double validateBFBCG(const CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d);
 
 
 
 // = = = Function signatures = = = = 
 //Generate random SPD dense matrix
 // N is matrix size
-float* generateSPD_DenseMatrix(int N){
-	float* mtx_h = NULL;
-	float* mtx_d = NULL;
-	float* mtxSPD_h = NULL;
-	float* mtxSPD_d = NULL;
+double* generateSPD_DenseMatrix(int N){
+	double* mtx_h = NULL;
+	double* mtx_d = NULL;
+	double* mtxSPD_h = NULL;
+	double* mtxSPD_d = NULL;
 
 	//Using for cublas function
-	const float alpha = 1.0f;
-	const float beta = 0.0f;
+	const double alpha = 1.0f;
+	const double beta = 0.0f;
 
 	//Allocate memoery in Host
-	mtx_h = (float*)malloc(sizeof(float)* (N*N));
-	mtxSPD_h = (float*)malloc(sizeof(float)* (N*N));
+	mtx_h = (double*)malloc(sizeof(double)* (N*N));
+	mtxSPD_h = (double*)malloc(sizeof(double)* (N*N));
 
 	if(! mtx_h || ! mtxSPD_h){
 		printf("\nFailed to allocate memory in host\n\n");
@@ -244,7 +244,7 @@ float* generateSPD_DenseMatrix(int N){
 		if(wkr % N == 0){
 			printf("\n");
 		}
-		mtx_h[wkr] = ((float)rand()/RAND_MAX);
+		mtx_h[wkr] = ((double)rand()/RAND_MAX);
 		// printf("\nmtx_h[%d] = %f", wkr, mtx_h[wkr]);
 
 	}
@@ -252,20 +252,20 @@ float* generateSPD_DenseMatrix(int N){
 
 
 	//(1)Allocate memoery in device
-	CHECK(cudaMalloc((void**)&mtx_d, sizeof(float) * (N*N)));
-	CHECK(cudaMalloc((void**)&mtxSPD_d, sizeof(float) * (N*N)));
+	CHECK(cudaMalloc((void**)&mtx_d, sizeof(double) * (N*N)));
+	CHECK(cudaMalloc((void**)&mtxSPD_d, sizeof(double) * (N*N)));
 
 	//(2) Copy value from host to device
-	CHECK(cudaMemcpy(mtx_d, mtx_h, sizeof(float)* (N*N), cudaMemcpyHostToDevice));
+	CHECK(cudaMemcpy(mtx_d, mtx_h, sizeof(double)* (N*N), cudaMemcpyHostToDevice));
 
 	//(3) Calculate SPD matrix <- A' * A
 	// Create a cuBLAS handle
 	cublasHandle_t handle;
 	cublasCreate(&handle);
-	checkCudaErrors(cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, mtx_d, N, mtx_d, N, &beta, mtxSPD_d, N));
+	checkCudaErrors(cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, mtx_d, N, mtx_d, N, &beta, mtxSPD_d, N));
 
 	//(4) Copy value from device to host
-	CHECK(cudaMemcpy(mtxSPD_h, mtxSPD_d, sizeof(float) * (N*N), cudaMemcpyDeviceToHost));
+	CHECK(cudaMemcpy(mtxSPD_h, mtxSPD_d, sizeof(double) * (N*N), cudaMemcpyDeviceToHost));
 	
 	//(5) Free memeory
 	cudaFree(mtx_d);
@@ -279,10 +279,10 @@ float* generateSPD_DenseMatrix(int N){
 
 
 // N is matrix size
-float* generate_TriDiagMatrix(int N)
+double* generate_TriDiagMatrix(int N)
 {
 	//Allocate memoery in Host
-	float* mtx_h = (float*)calloc(N*N, sizeof(float));
+	double* mtx_h = (double*)calloc(N*N, sizeof(double));
 
 
 	if(! mtx_h){
@@ -294,15 +294,15 @@ float* generate_TriDiagMatrix(int N)
 	srand(static_cast<unsigned>(time(0)));
 
 	// Generate and store to mtx_h tridiagonal random values between 0 and 1.
-	mtx_h[0] = ((float)rand()/RAND_MAX)+10.0f;
-	mtx_h[1] = ((float)rand()/RAND_MAX);
+	mtx_h[0] = ((double)rand()/RAND_MAX)+10.0f;
+	mtx_h[1] = ((double)rand()/RAND_MAX);
 	for (int wkr = 1; wkr < N -1 ;  wkr++){
-		mtx_h[(wkr * N) + (wkr-1)] =((float)rand()/RAND_MAX);
-		mtx_h[wkr * N + wkr] = ((float)rand()/RAND_MAX)+10.0f;
-		mtx_h[(wkr * N) + (wkr+1)] = ((float)rand()/RAND_MAX);
+		mtx_h[(wkr * N) + (wkr-1)] =((double)rand()/RAND_MAX);
+		mtx_h[wkr * N + wkr] = ((double)rand()/RAND_MAX)+10.0f;
+		mtx_h[(wkr * N) + (wkr+1)] = ((double)rand()/RAND_MAX);
 	}
-	mtx_h[(N*(N-1))+ (N-2)] = ((float)rand()/RAND_MAX);
-	mtx_h[(N*(N-1)) + (N-1)] = ((float)rand()/RAND_MAX) + 10.0f;
+	mtx_h[(N*(N-1))+ (N-2)] = ((double)rand()/RAND_MAX);
+	mtx_h[(N*(N-1)) + (N-1)] = ((double)rand()/RAND_MAX) + 10.0f;
 	
 
 	//Scale down
@@ -315,7 +315,7 @@ float* generate_TriDiagMatrix(int N)
 
 
 //Initialize initial guess matrix as 0.
-void initilizeZero(float mtxSolX_h[], int numOfRow, int numOfClm)
+void initilizeZero(double mtxSolX_h[], int numOfRow, int numOfClm)
 {
 	for (int wkr = 0; wkr < numOfRow * numOfClm; wkr++){
 		mtxSolX_h[wkr] = 0.0f;
@@ -323,22 +323,22 @@ void initilizeZero(float mtxSolX_h[], int numOfRow, int numOfClm)
 } // end of initializeZero
 
 //Initialize given matrix as 1.
-void initilizeOne(float mtxB_h[], int numOfRow, int numOfClm){
+void initilizeOne(double mtxB_h[], int numOfRow, int numOfClm){
 	for (int wkr = 0; wkr < numOfRow * numOfClm; wkr++){
 		mtxB_h[wkr] = 1.0f;
 	}
 } // end of initializeOne
 
-float* generateWellConditoinedSPDMatrix(int N)
+double* generateWellConditoinedSPDMatrix(int N)
 {
-	float* mtxA_h = (float*)malloc(N * N * sizeof(float));
+	double* mtxA_h = (double*)malloc(N * N * sizeof(double));
 
 	srand(time(NULL));
 
 	//Generate a random matrix
 	for (int otWkr = 0; otWkr < N; otWkr++){
 		for (int inWkr = 0; inWkr <= otWkr; inWkr++){
-			float val = (float)rand() / RAND_MAX;
+			double val = (double)rand() / RAND_MAX;
 			mtxA_h[otWkr * N + inWkr] = val;
 			mtxA_h[inWkr * N + otWkr] = val;
 		} // end of inner loop
@@ -352,9 +352,9 @@ float* generateWellConditoinedSPDMatrix(int N)
 	return mtxA_h;
 } // end of generateWellConditoinedSPDMatrix
 
-void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
+void validateSol(const double *mtxA_h, const double* x_h, double* rhs, int N)
 {
-    float rsum, diff, error = 0.0f;
+    double rsum, diff, error = 0.0f;
 
     for (int rw_wkr = 0; rw_wkr < N; rw_wkr++){
         rsum = 0.0f;
@@ -375,38 +375,38 @@ void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
 
 //TODO
 //Breakdown Free Block Conjugate Gradient (BFBCG) function
-//Input: float* mtxA_d, float* mtxB_d, float* mtxSolX_d, int numOfA, int numOfColX
+//Input: double* mtxA_d, double* mtxB_d, double* mtxSolX_d, int numOfA, int numOfColX
 //Process: Solve AX = B where A is sparse matrix, X is solutoinn column vectors and B is given column vectors
-//Output: float* mtxSolX_d
-// void bfbcg(CSRMatrix &csrMtxA, float* mtxSolX_d, float* mtxB_d, int numOfA, int numOfColX)
+//Output: double* mtxSolX_d
+// void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, int numOfColX)
 // {	
 // 	bool debug = true;
 
 // 	int crrntRank = numOfColX;
 // 	//FIXME THRESHOLD 1e-4~ mtxP is too small.
-// 	const float THRESHOLD = 1e-6;
+// 	const double THRESHOLD = 1e-6;
 // 	bool isStop = false;
 
-// 	float* mtxR_d = NULL; // Residual
+// 	double* mtxR_d = NULL; // Residual
 // 	CSRMatrix csrMtxM = generateSparseIdentityMatrixCSR(numOfA); // Precondtion
-// 	float* mtxZ_d = NULL; // Residual * precondition
-// 	float* mtxP_d = NULL; // Search space
-// 	float* mtxQ_d = NULL; // Q <- A * P
-// 	float* mtxPTQ_d = NULL; // To calculate mtxPTQ_inv_d
-// 	float* mtxPTQ_inv_d = NULL; // Save it for beta calulatoin
-// 	float* mtxPTR_d = NULL; 
-// 	float* mtxAlph_d = NULL; // Alpha
-// 	// float* sclAlph_d = NULL; // Alpha for scaler
-// 	float* alpha_h = NULL; // sclaler for alpha in case alpha is 1 by 1
-// 	float* mtxBta_d = NULL; // Beta
-// 	float* beta_h = NULL; // sclaler for alpha in case alpha is 1 by 1
-// 	float* mtxQTZ_d = NULL; // For calculating mtxBta
+// 	double* mtxZ_d = NULL; // Residual * precondition
+// 	double* mtxP_d = NULL; // Search space
+// 	double* mtxQ_d = NULL; // Q <- A * P
+// 	double* mtxPTQ_d = NULL; // To calculate mtxPTQ_inv_d
+// 	double* mtxPTQ_inv_d = NULL; // Save it for beta calulatoin
+// 	double* mtxPTR_d = NULL; 
+// 	double* mtxAlph_d = NULL; // Alpha
+// 	// double* sclAlph_d = NULL; // Alpha for scaler
+// 	double* alpha_h = NULL; // sclaler for alpha in case alpha is 1 by 1
+// 	double* mtxBta_d = NULL; // Beta
+// 	double* beta_h = NULL; // sclaler for alpha in case alpha is 1 by 1
+// 	double* mtxQTZ_d = NULL; // For calculating mtxBta
 
 	
 // 	//For calculating relative residual during the iteration
-// 	float orgRsdl_h = 0.0f; // Initial residual
-// 	float newRsdl_h = 0.0f; // New residual dring the iteration
-// 	float rltvRsdl_h = 0.0f; // Relateive resitual
+// 	double orgRsdl_h = 0.0f; // Initial residual
+// 	double newRsdl_h = 0.0f; // New residual dring the iteration
+// 	double rltvRsdl_h = 0.0f; // Relateive resitual
 
 
 // 	//Crete handler
@@ -420,24 +420,24 @@ void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
 
 
 // 	//(1) Allocate memory
-// 	CHECK(cudaMalloc((void**)&mtxR_d, numOfA * crrntRank * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxZ_d, numOfA * crrntRank * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxQ_d, numOfA * crrntRank * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxPTQ_d, crrntRank * crrntRank * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxPTQ_inv_d, crrntRank * crrntRank * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxPTR_d, crrntRank * numOfA * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxAlph_d, crrntRank * numOfColX * sizeof(float)));
-// 	// CHECK(cudaMalloc((void**)&sclAlph_d, sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxBta_d, crrntRank * numOfColX * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxQTZ_d, crrntRank * numOfA * sizeof(float)));
+// 	CHECK(cudaMalloc((void**)&mtxR_d, numOfA * crrntRank * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxZ_d, numOfA * crrntRank * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxQ_d, numOfA * crrntRank * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxPTQ_d, crrntRank * crrntRank * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxPTQ_inv_d, crrntRank * crrntRank * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxPTR_d, crrntRank * numOfA * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxAlph_d, crrntRank * numOfColX * sizeof(double)));
+// 	// CHECK(cudaMalloc((void**)&sclAlph_d, sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxBta_d, crrntRank * numOfColX * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxQTZ_d, crrntRank * numOfA * sizeof(double)));
 
 
-// 	alpha_h = (float*)malloc(sizeof(float));
-// 	beta_h = (float*)malloc(sizeof(float));
+// 	alpha_h = (double*)malloc(sizeof(double));
+// 	beta_h = (double*)malloc(sizeof(double));
 	
 
 // 	//(2) Copy memory
-// 	CHECK(cudaMemcpy(mtxR_d, mtxB_d, numOfA * numOfColX * sizeof(float), cudaMemcpyDeviceToDevice));
+// 	CHECK(cudaMemcpy(mtxR_d, mtxB_d, numOfA * numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
 // 	if(debug){
 // 		printf("\n\n~~mtxR~~\n\n");
 // 		print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
@@ -520,9 +520,9 @@ void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
 // 		//Alpha <- (P'Q)^{-1} * (P'R)
 // 		if(crrntRank == 1){
 // 			// Copy data to mtxAlpha to overwrite as an answer
-//     		// CHECK(cudaMalloc((void**)&mtxAlph_d, numOfColX * sizeof(float)));
-// 			CHECK(cudaMemcpy(mtxAlph_d, mtxPTR_d, numOfColX * sizeof(float), cudaMemcpyDeviceToDevice));
-// 			CHECK(cudaMemcpy(alpha_h, mtxPTQ_inv_d, sizeof(float), cudaMemcpyDeviceToHost));
+//     		// CHECK(cudaMalloc((void**)&mtxAlph_d, numOfColX * sizeof(double)));
+// 			CHECK(cudaMemcpy(mtxAlph_d, mtxPTR_d, numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
+// 			CHECK(cudaMemcpy(alpha_h, mtxPTQ_inv_d, sizeof(double), cudaMemcpyDeviceToHost));
 // 			if(debug){
 // 				printf("\n\n = = mtxPTQ_inv_d: %f = = \n", *alpha_h);
 // 			}
@@ -591,8 +591,8 @@ void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
 // 		if(crrntRank == 1){
 			
 // 			// Copy data to mtxBta to overwrite as an answer
-// 			CHECK(cudaMemcpy(mtxBta_d, mtxQTZ_d, numOfColX * sizeof(float), cudaMemcpyDeviceToDevice));
-// 			CHECK(cudaMemcpy(beta_h, mtxPTQ_inv_d, crrntRank * sizeof(float), cudaMemcpyDeviceToHost));
+// 			CHECK(cudaMemcpy(mtxBta_d, mtxQTZ_d, numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
+// 			CHECK(cudaMemcpy(beta_h, mtxPTQ_inv_d, crrntRank * sizeof(double), cudaMemcpyDeviceToHost));
 // 			// printf("\n\n = =  mtxPTQ_inv_d: %f = = \n", *beta_h);
 // 			*beta_h *= -1.0f;
 // 			// printf("\n\n = =  - mtxPTQ_inv_d: %f = = \n", *beta_h);
@@ -663,7 +663,7 @@ void validateSol(const float *mtxA_h, const float* x_h, float* rhs, int N)
 
 
 //Stop condition
-//Input: cublasHandle_t cublasHandler, float* matrix Residual, int number of row, int number of column
+//Input: cublasHandle_t cublasHandler, double* matrix Residual, int number of row, int number of column
 //Process: Extracts the first column vector from the residual matrix,
 // 			Calculate dot product of the first column vector, then compare sqare root of dot product with Threashold
 bool checkStop(cublasHandle_t cublasHandler, double *mtxR_d, int numOfRow, int numOfClm, double const threshold)
@@ -696,17 +696,17 @@ bool checkStop(cublasHandle_t cublasHandler, double *mtxR_d, int numOfRow, int n
 	return (sqrt(dotPrdct)< threshold);
 }
 
-//Input: cublasHandle_t cublasHandler, float * mtxR_d, int numOfRow, int numOfClm, float* residual as answer
+//Input: cublasHandle_t cublasHandler, double * mtxR_d, int numOfRow, int numOfClm, double* residual as answer
 //Process: Extrace the first column vector from the Residual mtrix and calculate dot product
-//Output: float& rsdl_h
-void calculateResidual(cublasHandle_t cublasHandler, float * mtxR_d, int numOfRow, int numOfClm, float& rsdl_h)
+//Output: double& rsdl_h
+void calculateResidual(cublasHandle_t cublasHandler, double * mtxR_d, int numOfRow, int numOfClm, double& rsdl_h)
 {	
-	float* r1_d = NULL;
+	double* r1_d = NULL;
 	bool debug =false;
 
 	//Extract first column
-	CHECK(cudaMalloc((void**)&r1_d, numOfRow * sizeof(float)));
-	CHECK(cudaMemcpy(r1_d, mtxR_d, numOfRow * sizeof(float), cudaMemcpyDeviceToDevice));
+	CHECK(cudaMalloc((void**)&r1_d, numOfRow * sizeof(double)));
+	CHECK(cudaMemcpy(r1_d, mtxR_d, numOfRow * sizeof(double), cudaMemcpyDeviceToDevice));
 
 	if(debug){
 		printf("\n\nvector r_1: \n");
@@ -714,7 +714,7 @@ void calculateResidual(cublasHandle_t cublasHandler, float * mtxR_d, int numOfRo
 	}
 	
 	//Dot product of r_{1}' * r_{1}, cublasSdot
-	checkCudaErrors(cublasSdot(cublasHandler, numOfRow, r1_d, 1, r1_d, 1, &rsdl_h));
+	checkCudaErrors(cublasDdot(cublasHandler, numOfRow, r1_d, 1, r1_d, 1, &rsdl_h));
 
 	//Square root(dotPrdct)
 	if(debug){
@@ -729,7 +729,7 @@ void calculateResidual(cublasHandle_t cublasHandler, float * mtxR_d, int numOfRo
 }
 
 //Inverse
-//Input: float* matrix A, float* matrix A inverse, int N, number of Row or Column
+//Input: double* matrix A, double* matrix A inverse, int N, number of Row or Column
 //Process: Inverse matrix
 //Output: lfoat mtxQPT_d
 void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, double* mtxA_d, double* mtxA_inv_d, int N)
@@ -778,7 +778,7 @@ void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, double* mtxA_d, double*
 
 	//(3)Calculate work space for cusolver
     checkCudaErrors(cusolverDnDgetrf_bufferSize(cusolverHandler, N, N, mtxA_cpy_d, N, &lwork));
-    checkCudaErrors(cudaMalloc((void**)&work_d, lwork * sizeof(float)));
+    checkCudaErrors(cudaMalloc((void**)&work_d, lwork * sizeof(double)));
 	CHECK(cudaMalloc((void**)&devInfo, sizeof(int)));
     CHECK(cudaMalloc((void**)&pivots_d, N * sizeof(int)));
 
@@ -851,9 +851,9 @@ void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, double* mtxA_d, double*
 } // end of inverse_Den_Mtx
 
 
-//Input: float* identity matrix, int numer of Row, Column
+//Input: double* identity matrix, int numer of Row, Column
 //Process: Creating dense identity matrix with number of N
-//Output: float* mtxI
+//Output: double* mtxI
 __global__ void identity_matrix(double* mtxI_d, int N)
 {	
 	//Get global index 
@@ -876,9 +876,9 @@ __global__ void identity_matrix(double* mtxI_d, int N)
 }// end of identity_matrix
 
 
-//Input: float* identity matrix, int N, which is numer of Row or Column
+//Input: double* identity matrix, int N, which is numer of Row or Column
 //Process: Call the kernel to create identity matrix with number of N
-//Output: float* mtxI
+//Output: double* mtxI
 void createIdentityMtx(double* mtxI_d, int N)
 {		
 	// Use a 1D block and grid configuration
@@ -899,17 +899,17 @@ void createIdentityMtx(double* mtxI_d, int N)
 
 
 //Sparse matrix multiplicatation
-//Input: const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClmB, float * dnxMtxC_d
+//Input: const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmB, double * dnxMtxC_d
 //Process: Matrix Multiplication Sparse matrix and Dense matrix
 //Output: dnsMtxC_d, dense matrix C in device
-void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClmsB, float * dnsMtxC_d)
+void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d)
 {
 	int numRowsA = csrMtx.numOfRows;
 	int numClmsA = csrMtx.numOfClms;
 	int nnz = csrMtx.numOfnz;
 
-	float alpha = 1.0f;
-	float beta = 0.0f;
+	double alpha = 1.0f;
+	double beta = 0.0f;
 
 	bool debug = false;
 
@@ -917,16 +917,16 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClm
 	//(1) Allocate device memoery for CSR matrix
 	int	*row_offsets_d = NULL;
 	int *col_indices_d = NULL;
-	float *vals_d = NULL;
+	double *vals_d = NULL;
 
 	CHECK(cudaMalloc((void**)&row_offsets_d, (numRowsA + 1) * sizeof(int)));
 	CHECK(cudaMalloc((void**)&col_indices_d, nnz * sizeof(int)));
-	CHECK(cudaMalloc((void**)&vals_d, nnz * sizeof(float)));
+	CHECK(cudaMalloc((void**)&vals_d, nnz * sizeof(double)));
 
 	//(2) Copy values from host to device
 	CHECK(cudaMemcpy(row_offsets_d, csrMtx.row_offsets, (numRowsA+1) * sizeof(int), cudaMemcpyHostToDevice));
 	CHECK(cudaMemcpy(col_indices_d, csrMtx.col_indices, nnz * sizeof(int), cudaMemcpyHostToDevice));
-	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(float), cudaMemcpyHostToDevice));
+	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3) Crate cuSPARSE handle and descriptors
 	cusparseHandle_t cusparseHandler;
@@ -935,18 +935,18 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClm
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnMatDescr_t mtxB, mtxC;
 
-	checkCudaErrors(cusparseCreateCsr(&mtxA, numRowsA, numClmsA, nnz, row_offsets_d, col_indices_d, vals_d, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
-	checkCudaErrors(cusparseCreateDnMat(&mtxB, numClmsA, numClmsB, numClmsA, dnsMtxB_d, CUDA_R_32F, CUSPARSE_ORDER_COL));
-	checkCudaErrors(cusparseCreateDnMat(&mtxC, numRowsA, numClmsB, numRowsA, dnsMtxC_d, CUDA_R_32F, CUSPARSE_ORDER_COL));
+	checkCudaErrors(cusparseCreateCsr(&mtxA, numRowsA, numClmsA, nnz, row_offsets_d, col_indices_d, vals_d, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
+	checkCudaErrors(cusparseCreateDnMat(&mtxB, numClmsA, numClmsB, numClmsA, dnsMtxB_d, CUDA_R_64F, CUSPARSE_ORDER_COL));
+	checkCudaErrors(cusparseCreateDnMat(&mtxC, numRowsA, numClmsB, numRowsA, dnsMtxC_d, CUDA_R_64F, CUSPARSE_ORDER_COL));
 
 	//(4) Calculate buffer size of Spase by dense matrix mulply operation
     size_t bufferSize = 0;
     void *dBuffer = NULL;
-	checkCudaErrors(cusparseSpMM_bufferSize(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
+	checkCudaErrors(cusparseSpMM_bufferSize(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_64F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
 	CHECK(cudaMalloc(&dBuffer, bufferSize));
 
 	//(5)Perform sparse-dense matrix Multiplication
-	checkCudaErrors(cusparseSpMM(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
+	checkCudaErrors(cusparseSpMM(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_64F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
 	if(debug){
 		printf("\n\n~~mtxC after cusparseSpMM~~\n\n");
@@ -968,16 +968,16 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxB_d, int numClm
 
 
 
-//Input: float *dnsMtxB_d, const CSRMatrix &csrMtx, float *dnsMtxX_d, int numClmB, float * dnxMtxC_d
+//Input: double *dnsMtxB_d, const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmB, double * dnxMtxC_d
 //Process: perform C = C - AX
 //Output: dnsMtxC_d, dense matrix C in device
-void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d) {
+void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d) {
 int numRowsA = csrMtx.numOfRows;
 	int numClmsA = csrMtx.numOfClms;
 	int nnz = csrMtx.numOfnz;
 
-	float alpha = -1.0f;
-	float beta = 1.0f;
+	double alpha = -1.0f;
+	double beta = 1.0f;
 
 	bool debug = false;
 
@@ -985,16 +985,16 @@ int numRowsA = csrMtx.numOfRows;
 	//(1) Allocate device memoery for CSR matrix
 	int	*row_offsets_d = NULL;
 	int *col_indices_d = NULL;
-	float *vals_d = NULL;
+	double *vals_d = NULL;
 
 	CHECK(cudaMalloc((void**)&row_offsets_d, (numRowsA + 1) * sizeof(int)));
 	CHECK(cudaMalloc((void**)&col_indices_d, nnz * sizeof(int)));
-	CHECK(cudaMalloc((void**)&vals_d, nnz * sizeof(float)));
+	CHECK(cudaMalloc((void**)&vals_d, nnz * sizeof(double)));
 
 	//(2) Copy values from host to device
 	CHECK(cudaMemcpy(row_offsets_d, csrMtx.row_offsets, (numRowsA+1) * sizeof(int), cudaMemcpyHostToDevice));
 	CHECK(cudaMemcpy(col_indices_d, csrMtx.col_indices, nnz * sizeof(int), cudaMemcpyHostToDevice));
-	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(float), cudaMemcpyHostToDevice));
+	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3) Crate cuSPARSE handle and descriptors
 	cusparseHandle_t cusparseHandler;
@@ -1003,18 +1003,18 @@ int numRowsA = csrMtx.numOfRows;
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnMatDescr_t mtxB, mtxC;
 
-	checkCudaErrors(cusparseCreateCsr(&mtxA, numRowsA, numClmsA, nnz, row_offsets_d, col_indices_d, vals_d, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
-	checkCudaErrors(cusparseCreateDnMat(&mtxB, numClmsA, numClmsB, numClmsA, dnsMtxX_d, CUDA_R_32F, CUSPARSE_ORDER_COL));
-	checkCudaErrors(cusparseCreateDnMat(&mtxC, numRowsA, numClmsB, numRowsA, dnsMtxC_d, CUDA_R_32F, CUSPARSE_ORDER_COL));
+	checkCudaErrors(cusparseCreateCsr(&mtxA, numRowsA, numClmsA, nnz, row_offsets_d, col_indices_d, vals_d, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
+	checkCudaErrors(cusparseCreateDnMat(&mtxB, numClmsA, numClmsB, numClmsA, dnsMtxX_d, CUDA_R_64F, CUSPARSE_ORDER_COL));
+	checkCudaErrors(cusparseCreateDnMat(&mtxC, numRowsA, numClmsB, numRowsA, dnsMtxC_d, CUDA_R_64F, CUSPARSE_ORDER_COL));
 
 	//(4) Calculate buffer size of Spase by dense matrix mulply operation
     size_t bufferSize = 0;
     void *dBuffer = NULL;
-	checkCudaErrors(cusparseSpMM_bufferSize(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
+	checkCudaErrors(cusparseSpMM_bufferSize(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_64F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
 	CHECK(cudaMalloc(&dBuffer, bufferSize));
 
 	//(5)Perform sparse-dense matrix Multiplication
-	checkCudaErrors(cusparseSpMM(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
+	checkCudaErrors(cusparseSpMM(cusparseHandler, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mtxA, mtxB, &beta, mtxC, CUDA_R_64F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
 	if(debug){
 		printf("\n\n~~mtxC after cusparseSpMM~~\n\n");
@@ -1039,10 +1039,10 @@ int numRowsA = csrMtx.numOfRows;
 
 
 // //Orth functions
-// //Input: float* mtxZ, int number of Row, int number Of column, int & currentRank
+// //Input: double* mtxZ, int number of Row, int number Of column, int & currentRank
 // //Process: the function extracts orthonormal set from the matrix Z
-// //Output: float* mtxY_hat, the orthonormal set of matrix Z.
-// void orth(float** mtxY_hat_d, float* mtxZ_d, int numOfRow, int numOfClm, int &currentRank)
+// //Output: double* mtxY_hat, the orthonormal set of matrix Z.
+// void orth(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank)
 // {	
 // 	/*
 // 	Pseudocode
@@ -1063,17 +1063,17 @@ int numRowsA = csrMtx.numOfRows;
 // 	Return mtxY
 // 	*/
 
-// 	float *mtxY_d = NULL; // Orthonormal set, serach diretion
-// 	float *mtxZ_cpy_d = NULL; // Need a copy to tranpose mtxZ'
-// 	float *mtxS_d = NULL;
+// 	double *mtxY_d = NULL; // Orthonormal set, serach diretion
+// 	double *mtxZ_cpy_d = NULL; // Need a copy to tranpose mtxZ'
+// 	double *mtxS_d = NULL;
 
-// 	float *mtxU_d = NULL;
-// 	float *sngVals_d = NULL;
-// 	float *mtxV_d = NULL;
-// 	float *mtxVT_d = NULL;
-// 	float *mtxV_trnc_d = NULL;
+// 	double *mtxU_d = NULL;
+// 	double *sngVals_d = NULL;
+// 	double *mtxV_d = NULL;
+// 	double *mtxVT_d = NULL;
+// 	double *mtxV_trnc_d = NULL;
 
-// 	const float THREASHOLD = 1e-5;
+// 	const double THREASHOLD = 1e-5;
 
 // 	bool debug = false;
 	
@@ -1086,16 +1086,16 @@ int numRowsA = csrMtx.numOfRows;
 
 // 	//(1) Allocate memeory in device
 // 	//Make a copy of mtxZ for mtxZ'
-//     CHECK(cudaMalloc((void**)&mtxZ_cpy_d, numOfRow * numOfClm * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxS_d, numOfRow * numOfClm * sizeof(float)));
+//     CHECK(cudaMalloc((void**)&mtxZ_cpy_d, numOfRow * numOfClm * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxS_d, numOfRow * numOfClm * sizeof(double)));
 	
 // 	//For SVD decomposition
-// 	CHECK(cudaMalloc((void**)&mtxU_d, numOfRow * numOfClm * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&sngVals_d, numOfClm * sizeof(float)));
-// 	CHECK(cudaMalloc((void**)&mtxVT_d, numOfClm * numOfClm * sizeof(float)));
+// 	CHECK(cudaMalloc((void**)&mtxU_d, numOfRow * numOfClm * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&sngVals_d, numOfClm * sizeof(double)));
+// 	CHECK(cudaMalloc((void**)&mtxVT_d, numOfClm * numOfClm * sizeof(double)));
 
 // 	//(2) Copy value to device
-// 	CHECK(cudaMemcpy(mtxZ_cpy_d, mtxZ_d, numOfRow * numOfClm * sizeof(float), cudaMemcpyDeviceToDevice));
+// 	CHECK(cudaMemcpy(mtxZ_cpy_d, mtxZ_d, numOfRow * numOfClm * sizeof(double), cudaMemcpyDeviceToDevice));
 	
 	
 // 	if(debug){
@@ -1159,7 +1159,7 @@ int numRowsA = csrMtx.numOfRows;
 // 	}	
 
 // 	//(4.6) Multiply matrix Y <- matrix Z * matrix V Truncated
-// 	CHECK(cudaMalloc((void**)&mtxY_d, numOfRow * currentRank * sizeof(float)));
+// 	CHECK(cudaMalloc((void**)&mtxY_d, numOfRow * currentRank * sizeof(double)));
 // 	multiply_Den_ClmM_mtx_mtx(cublasHandler, mtxZ_d, mtxV_trnc_d, mtxY_d, numOfRow, currentRank, numOfClm);
 	
 // 	if(debug){
@@ -1178,11 +1178,11 @@ int numRowsA = csrMtx.numOfRows;
 // 	//(4.6) Check orthogonality
 // 	if(debug){
 // 		//Check the matrix Y hat column vectors are orthogonal eachother
-// 		float* mtxI_d = NULL;
-// 		float* mtxY_cpy_d = NULL;
-// 		CHECK(cudaMalloc((void**)&mtxI_d, currentRank * currentRank * sizeof(float)));
-// 		CHECK(cudaMalloc((void**)&mtxY_cpy_d, numOfRow * currentRank * sizeof(float)));
-// 	    CHECK(cudaMemcpy(mtxY_cpy_d, mtxY_d, numOfRow * currentRank * sizeof(float), cudaMemcpyDeviceToDevice));
+// 		double* mtxI_d = NULL;
+// 		double* mtxY_cpy_d = NULL;
+// 		CHECK(cudaMalloc((void**)&mtxI_d, currentRank * currentRank * sizeof(double)));
+// 		CHECK(cudaMalloc((void**)&mtxY_cpy_d, numOfRow * currentRank * sizeof(double)));
+// 	    CHECK(cudaMemcpy(mtxY_cpy_d, mtxY_d, numOfRow * currentRank * sizeof(double), cudaMemcpyDeviceToDevice));
 
 // 		//After this function mtxY_cpy_d will be free.
 // 		multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxY_cpy_d, mtxI_d, numOfRow, currentRank);
@@ -1217,13 +1217,13 @@ int numRowsA = csrMtx.numOfRows;
 
 
 // //Input: cusolverDnHandler, int number of row, int number of column, int leading dimensino, 
-// //		 float* matrix A, float* matrix U, float* vector singlluar values, float* matrix V tranpose
+// //		 double* matrix A, double* matrix U, double* vector singlluar values, double* matrix V tranpose
 // //Process: Singluar Value Decomposion
-// //Output: float* Matrix U, float* singular value vectors, float* Matrix V transpose
-// void SVD_Decmp(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, float* mtxA_d, float* mtxU_d, float* sngVals_d, float*mtxVT_d)
+// //Output: double* Matrix U, double* singular value vectors, double* Matrix V transpose
+// void SVD_Decmp(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, double* mtxA_d, double* mtxU_d, double* sngVals_d, double*mtxVT_d)
 // {	
 // 	//Make a copy of matrix A to aboid value changing though SVD Decomposion
-// 	float* mtxA_cpy_d = NULL;
+// 	double* mtxA_cpy_d = NULL;
 
 // 	/*The devInfo is an integer pointer
 //     It points to device memory where cuSOLVER can store information 
@@ -1233,8 +1233,8 @@ int numRowsA = csrMtx.numOfRows;
 //     int lwork = 0;//Size of workspace
 //     //work_d is a pointer to device memory that serves as the workspace for the computation
 //     //Then passed to the cuSOLVER function performing the computation.
-//     float *work_d = NULL; // 
-//     float *rwork_d = NULL; // Place holder
+//     double *work_d = NULL; // 
+//     double *rwork_d = NULL; // Place holder
     
 
 //     //Specifies options for computing all or part of the matrix U: = ‘A’: 
@@ -1250,14 +1250,14 @@ int numRowsA = csrMtx.numOfRows;
 
 
 // 	//(1) Allocate memoery, and copy value
-// 	CHECK(cudaMalloc((void**)&mtxA_cpy_d, numOfRow * numOfClm * sizeof(float))); 
-// 	CHECK(cudaMemcpy(mtxA_cpy_d, mtxA_d, numOfRow * numOfClm * sizeof(float), cudaMemcpyDeviceToDevice));
+// 	CHECK(cudaMalloc((void**)&mtxA_cpy_d, numOfRow * numOfClm * sizeof(double))); 
+// 	CHECK(cudaMemcpy(mtxA_cpy_d, mtxA_d, numOfRow * numOfClm * sizeof(double), cudaMemcpyDeviceToDevice));
 
 // 	CHECK((cudaMalloc((void**)&devInfo, sizeof(int))));
 
 // 	//(2) Calculate workspace for SVD decompositoin
 // 	checkCudaErrors(cusolverDnSgesvd_bufferSize(cusolverHandler, numOfRow, numOfClm, &lwork));
-//     CHECK(cudaMalloc((void**)&work_d, lwork * sizeof(float)));
+//     CHECK(cudaMalloc((void**)&work_d, lwork * sizeof(double)));
 
 
 //     //(3) Compute SVD decomposition
@@ -1278,17 +1278,17 @@ int numRowsA = csrMtx.numOfRows;
 // }
 
 
-// //Input: singluar values, int currnet rank, float threashould
+// //Input: singluar values, int currnet rank, double threashould
 // //Process: Check eigenvalues are greater than threashould, then set new rank
 // //Output: int newRank
-// int setRank(float* sngVals_d, int currentRank, float threashold)
+// int setRank(double* sngVals_d, int currentRank, double threashold)
 // {	
 // 	int newRank = 0;
 
 // 	//Allcoate in heap to copy value from device
-// 	float* sngVals_h = (float*)malloc(currentRank * sizeof(float));
+// 	double* sngVals_h = (double*)malloc(currentRank * sizeof(double));
 // 	// Copy singular values from Device to count eigen values
-// 	checkCudaErrors(cudaMemcpy(sngVals_h, sngVals_d, currentRank * sizeof(float), cudaMemcpyDeviceToHost));
+// 	checkCudaErrors(cudaMemcpy(sngVals_h, sngVals_d, currentRank * sizeof(double), cudaMemcpyDeviceToHost));
 
 // 	for(int wkr = 0; wkr < currentRank; wkr++){
 // 		if(sngVals_h[wkr] > threashold){
@@ -1306,7 +1306,7 @@ int numRowsA = csrMtx.numOfRows;
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix multiplication matrix A and matrix B
 //Result: matrix C as a result
 void multiply_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA)
@@ -1320,7 +1320,7 @@ void multiply_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, dou
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix multiplication matrix -A and matrix B
 //Result: matrix C as a result
 void multiply_ngt_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA)
@@ -1333,7 +1333,7 @@ void multiply_ngt_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d,
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int leading dimension A, in leading dimension B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int leading dimension A, in leading dimension B
 //Process: matrix C <-  matrix A * matrix B + matrixC with overwrite
 //Result: matrix C as a result
 void multiply_sum_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA)
@@ -1347,7 +1347,7 @@ void multiply_sum_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d,
 
 
 //Input matrix should be column major
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* result matrix C in device, int number of Row, int number of column
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* result matrix C in device, int number of Row, int number of column
 //Process: matrix multiplication matrix A' * matrix A
 //Result: matrix C as a result with square matrix
 void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxC_d, int numOfRow, int numOfClm)
@@ -1363,7 +1363,7 @@ void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, do
 
 
 //Input matrix should be column major, overload function
-//Input: cubasHandle_t cublasHandler, float* matrix A in device, float* matrix B in device , float* result matrix C in device, int number of Row A, int number of column A, int number of cloumn B
+//Input: cubasHandle_t cublasHandler, double* matrix A in device, double* matrix B in device , double* result matrix C in device, int number of Row A, int number of column A, int number of cloumn B
 //Process: matrix multiplication matrix A' * matrix B
 //Result: matrix C as a result with square matrix
 void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfClmA, int numOfClmB)
@@ -1387,9 +1387,9 @@ void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, do
 } // end of multiply_Den_ClmM_mtxT_mtx
 
 
-//Input: cublasHandle_t cublasHandler, float* mtxB_d, float* mtxA_d, float* mtxSolX_d, int numOfRowA, int numOfClmB
+//Input: cublasHandle_t cublasHandler, double* mtxB_d, double* mtxA_d, double* mtxSolX_d, int numOfRowA, int numOfClmB
 //Process: Perform R = 
-//Output: float* mtxB_d as a result with overwritten
+//Output: double* mtxB_d as a result with overwritten
 void subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfClmA, int numOfClmB)
 {
 	const double alpha = -1.0f;
@@ -1402,21 +1402,21 @@ void subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandle_t cublasHandler, double* 
 
 
 //TODO check this function is need or not.
-//Input: cublasHandler_t cublasHandler, float* matrix X, int number of row, int number of column
+//Input: cublasHandler_t cublasHandler, double* matrix X, int number of row, int number of column
 //Process: the function allocate new memory space and tranpose the mtarix X
-//Output: float* matrix X transpose
-float* transpose_Den_Mtx(cublasHandle_t cublasHandler, float* mtxX_d, int numOfRow, int numOfClm)
+//Output: double* matrix X transpose
+double* transpose_Den_Mtx(cublasHandle_t cublasHandler, double* mtxX_d, int numOfRow, int numOfClm)
 {	
-	float* mtxXT_d = NULL;
-	const float alpha = 1.0f;
-	const float beta = 0.0f;
+	double* mtxXT_d = NULL;
+	const double alpha = 1.0f;
+	const double beta = 0.0f;
 
 	//Allocate a new memory space for mtxXT
-	CHECK(cudaMalloc((void**)&mtxXT_d, numOfRow * numOfClm * sizeof(float)));
+	CHECK(cudaMalloc((void**)&mtxXT_d, numOfRow * numOfClm * sizeof(double)));
 	
 	//Transpose mtxX
 	// checkCudaErrors(cublasSgeam(cublasHandler, CUBLAS_OP_T, CUBLAS_OP_N, COL_A, COL_A, &alpha, mtxVT_d, COL_A, &beta, mtxVT_d, COL_A, mtxV_d, COL_A));
-    checkCudaErrors(cublasSgeam(cublasHandler, CUBLAS_OP_T, CUBLAS_OP_N, numOfRow, numOfClm, &alpha, mtxX_d, numOfClm, &beta, mtxX_d, numOfRow, mtxXT_d, numOfRow));
+    checkCudaErrors(cublasDgeam(cublasHandler, CUBLAS_OP_T, CUBLAS_OP_N, numOfRow, numOfClm, &alpha, mtxX_d, numOfClm, &beta, mtxX_d, numOfRow, mtxXT_d, numOfRow));
 
 	//Free memory the original matrix X
 	CHECK(cudaFree(mtxX_d));
@@ -1424,17 +1424,17 @@ float* transpose_Den_Mtx(cublasHandle_t cublasHandler, float* mtxX_d, int numOfR
 	return mtxXT_d;
 }
 
-//Input: float* matrix V, int number of Row and Column, int current rank
+//Input: double* matrix V, int number of Row and Column, int current rank
 //Process: the functions truncates the matrix V with current rank
-//Output: float* matrix V truncated.
-float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank)
+//Output: double* matrix V truncated.
+double* truncate_Den_Mtx(double* mtxV_d, int numOfN, int currentRank)
 {	
 	//Allocate memoery for truncated matrix V
-	float* mtxV_trnc_d = NULL;
-	CHECK(cudaMalloc((void**)&mtxV_trnc_d, numOfN * currentRank * sizeof(float)));
+	double* mtxV_trnc_d = NULL;
+	CHECK(cudaMalloc((void**)&mtxV_trnc_d, numOfN * currentRank * sizeof(double)));
 
 	//Copy value from the original matrix until valid column vectors
-	CHECK(cudaMemcpy(mtxV_trnc_d, mtxV_d, numOfN * currentRank * sizeof(float), cudaMemcpyDeviceToDevice));
+	CHECK(cudaMemcpy(mtxV_trnc_d, mtxV_d, numOfN * currentRank * sizeof(double), cudaMemcpyDeviceToDevice));
 
 	//Make sure memoery Free full matrix V.
 	CHECK(cudaFree(mtxV_d));
@@ -1446,10 +1446,10 @@ float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank)
 
 
 
-//Input: float* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
+//Input: double* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
 //Process: the kernel normalize each column vector of matrix Y in 2 norm
-//Output: float* mtxY_d, which will be updated as normalized matrix Y hat.
- __global__ void normalizeClmVec(float* mtxY_d, int numOfRow, int numOfCol)
+//Output: double* mtxY_d, which will be updated as normalized matrix Y hat.
+ __global__ void normalizeClmVec(double* mtxY_d, int numOfRow, int numOfCol)
  {
 	// TO DO optimize with shared memory
 
@@ -1459,7 +1459,7 @@ float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank)
 	if(glbCol < numOfCol){
 		// printf("glbCol %d\n", glbCol);
 		//Calculate the L2 norm of the column
-		float sqrSum = 0.0f;
+		double sqrSum = 0.0f;
 
 		//sum of (column value)^2
 		for (int wkr = 0; wkr < numOfRow; wkr++){
@@ -1469,14 +1469,14 @@ float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank)
 		// printf("sqrSum %f\n", sqrSum);
 
 		// scalar = 1 / √sum of (column value)^2  
-		float normScaler = 1.0f /  sqrtf(sqrSum);
+		double normScaler = 1.0f /  sqrtf(sqrSum);
 
 		// printf("normScaler %f\n", normScaler);
 
 		//Normalize column value	
 		if(normScaler > 0.0f){
 			for (int wkr = 0; wkr < numOfRow; wkr++){
-				float nrmVal = mtxY_d[ glbCol * numOfRow + wkr] * normScaler;
+				double nrmVal = mtxY_d[ glbCol * numOfRow + wkr] * normScaler;
 				// printf("nrmVal %f\n", nrmVal);
 				mtxY_d[ glbCol * numOfRow + wkr] = nrmVal;
 			} // enf of for
@@ -1486,15 +1486,15 @@ float* truncate_Den_Mtx(float* mtxV_d, int numOfN, int currentRank)
  } // end of normalizeClmVec
 
 
-//Input: float* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
+//Input: double* mtxY, product of matrix Z * matrix U, int number of row, int number of column 
 //Process: the function calls kernel and normalize each column vector 
-//Output: float* mtxY_d, which will be updated as normalized matrix Y hat.
-void normalize_Den_Mtx(float* mtxY_d, int numOfRow, int numOfCol)
+//Output: double* mtxY_d, which will be updated as normalized matrix Y hat.
+void normalize_Den_Mtx(double* mtxY_d, int numOfRow, int numOfCol)
 {		
 
 	// Use a 1D block and grid configuration
     int blockSize = 1024; // Number of threads per block
-    int gridSize = ceil((float)numOfCol / blockSize); // Number of blocks needed
+    int gridSize = ceil((double)numOfCol / blockSize); // Number of blocks needed
 
     normalizeClmVec<<<gridSize, blockSize>>>(mtxY_d, numOfRow, numOfCol);
     
@@ -1502,16 +1502,16 @@ void normalize_Den_Mtx(float* mtxY_d, int numOfRow, int numOfCol)
 }
 
 //Overloadfunction
-void normalize_Den_Mtx(cublasHandle_t cublasHandler, float* mtxY_d, int numOfRow, int numOfCol)
+void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRow, int numOfCol)
 {	
 	bool debug = false;
 	
 	//Make an array for scalars each column vector
-	float* norms_h = (float*)malloc(numOfCol * sizeof(float));
+	double* norms_h = (double*)malloc(numOfCol * sizeof(double));
 	
 	//Compute the 2 norms for each column vectors
 	for (int wkr = 0; wkr < numOfCol; wkr++){
-		checkCudaErrors(cublasSnrm2(cublasHandler, numOfRow, mtxY_d + (wkr * numOfRow), 1, &norms_h[wkr]));
+		checkCudaErrors(cublasDnrm2(cublasHandler, numOfRow, mtxY_d + (wkr * numOfRow), 1, &norms_h[wkr]));
 	}
 
 	if(debug){
@@ -1522,8 +1522,8 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, float* mtxY_d, int numOfRow
 
 	//Normalize each column vector
 	for(int wkr = 0; wkr < numOfCol; wkr++){
-		float scalar = 1.0f / norms_h[wkr];
-		checkCudaErrors(cublasSscal(cublasHandler, numOfRow, &scalar, mtxY_d + (wkr * numOfRow), 1));
+		double scalar = 1.0f / norms_h[wkr];
+		checkCudaErrors(cublasDscal(cublasHandler, numOfRow, &scalar, mtxY_d + (wkr * numOfRow), 1));
 	}
 
 	free(norms_h);
@@ -1531,9 +1531,9 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, float* mtxY_d, int numOfRow
 } // end of normalize_Den_Mtx
 
 
-//Input: float* matrix A, int number of Row, int number Of Column
+//Input: double* matrix A, int number of Row, int number Of Column
 //Process: Compute condition number and check whther it is ill-conditioned or not.
-//Output: float condition number
+//Output: double condition number
 double computeConditionNumber(double* mtxA_d, int numOfRow, int numOfClm)
 {
 	bool debug = false;
@@ -1562,9 +1562,9 @@ double computeConditionNumber(double* mtxA_d, int numOfRow, int numOfClm)
 
 
 
-//Input: cusolverDnHandle_t cusolverHandler, int number of row, int number of column, int leading dimension, float* matrix A
+//Input: cusolverDnHandle_t cusolverHandler, int number of row, int number of column, int leading dimension, double* matrix A
 //Process: Extract eigenvalues with full SVD
-//Output: float* sngVals_d, singular values in device in column vector
+//Output: double* sngVals_d, singular values in device in column vector
 double* extractSngVals(cusolverDnHandle_t cusolverHandler, int numOfRow, int numOfClm, int ldngDim, double* mtxA_d)
 {
 	
@@ -1657,10 +1657,10 @@ double* extractSngVals(cusolverDnHandle_t cusolverHandler, int numOfRow, int num
 
 } // end of extractSngVals
 
-//Input: CSRMatrix &csrMtx, int numOfA, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d
+//Input: CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d
 //Process: perform R = B - AX, then calculate the first column vector 2 norms
-//Output: float twoNorms
-float validateBFBCG(const CSRMatrix &csrMtx, int numOfA, float *dnsMtxX_d, int numClmsB, float *dnsMtxC_d)
+//Output: double twoNorms
+double validateBFBCG(const CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d)
 {
 	bool debug = false;
 	
@@ -1674,7 +1674,7 @@ float validateBFBCG(const CSRMatrix &csrMtx, int numOfA, float *dnsMtxX_d, int n
 	cublasHandle_t cublasHandler = NULL;
 	checkCudaErrors(cublasCreate(&cublasHandler));
 
-	float twoNorms = 0.0f;
+	double twoNorms = 0.0f;
 	calculateResidual(cublasHandler, dnsMtxC_d, numOfA, numClmsB, twoNorms);
 
 	checkCudaErrors(cublasDestroy(cublasHandler));

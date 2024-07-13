@@ -36,13 +36,25 @@ void stopTest_Case4();
 void stopTest_Case5();
 
 int main(int arg, char** argv)
-{
+{   
+    printf("\n\n= = 🤔isStrop Test suites🤔 = = \n\n");
 
-    // stopTest_Case1();
-    // stopTest_Case2();
-    // stopTest_Case3();
+    printf("\n\n🔍🔍🔍TestCase1🔍🔍🔍\n\n");
+    stopTest_Case1();
+
+    printf("\n\n🔍🔍🔍TestCase2🔍🔍🔍\n\n");
+    stopTest_Case2();
+
+    printf("\n\n🔍🔍🔍TestCase3🔍🔍🔍\n\n");
+    stopTest_Case3();
+
+    printf("\n\n🔍🔍🔍TestCase4🔍🔍🔍\n\n");
     stopTest_Case4();
+
+    printf("\n\n🔍🔍🔍TestCase5🔍🔍🔍\n\n");
     stopTest_Case5();
+
+    printf("\n\n= = ✅✅end of isStrop Test suites✅✅ = = \n\n");
 
     return 0;
 } // end of main
@@ -50,14 +62,14 @@ int main(int arg, char** argv)
 
 void stopTest_Case1()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         0.00000001, 0.00000001, 0.00000001,
         0.000000001, 0.00000001, 0.00000001 
     };
 
     int numOfRow = 3;
     int numOfClm = 2;
-    float const THRESHOLD = 1e-6;
+    double const THRESHOLD = 1e-6;
 
     //Create handler
     cublasHandle_t cublasHandler = NULL;
@@ -65,11 +77,11 @@ void stopTest_Case1()
 
 
     //(1) Allocate memory
-    float* mtxA_d = NULL;
-    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(float)));
+    double* mtxA_d = NULL;
+    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(double)));
     
     //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(double), cudaMemcpyHostToDevice));
     
     //(3) Check stops or not
     bool isStop = checkStop(cublasHandler, mtxA_d, numOfRow, numOfClm, THRESHOLD);
@@ -83,14 +95,14 @@ void stopTest_Case1()
 
 void stopTest_Case2()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 
         0.000000001, 0.00000001, 0.00000001, 1, 2, 3
     };
 
     int numOfRow = 6;
     int numOfClm = 2;
-    float const THRESHOLD = 1e-6;
+    double const THRESHOLD = 1e-6;
 
     //Create handler
     cublasHandle_t cublasHandler = NULL;
@@ -98,11 +110,11 @@ void stopTest_Case2()
 
 
     //(1) Allocate memory
-    float* mtxA_d = NULL;
-    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(float)));
+    double* mtxA_d = NULL;
+    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(double)));
     
     //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(double), cudaMemcpyHostToDevice));
     
     //(3) Check stops or not
     bool isStop = checkStop(cublasHandler, mtxA_d, numOfRow, numOfClm, THRESHOLD);
@@ -115,7 +127,7 @@ void stopTest_Case2()
 
 void stopTest_Case3()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         0.000000001, 0.00000001, 0.00000001, 1, 0.0000001, -0.000000001, 0.0, 0.1, 0.1, 5,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5 
@@ -123,7 +135,7 @@ void stopTest_Case3()
 
     int numOfRow = 10;
     int numOfClm = 3;
-    float const THRESHOLD = 1e-5;
+    double const THRESHOLD = 1e-5;
 
     //Create handler
     cublasHandle_t cublasHandler = NULL;
@@ -131,11 +143,11 @@ void stopTest_Case3()
 
 
     //(1) Allocate memory
-    float* mtxA_d = NULL;
-    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(float)));
+    double* mtxA_d = NULL;
+    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(double)));
     
     //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(double), cudaMemcpyHostToDevice));
     
     //(3) Check stops or not
     bool isStop = checkStop(cublasHandler, mtxA_d, numOfRow, numOfClm, THRESHOLD);
@@ -148,7 +160,7 @@ void stopTest_Case3()
 
 void stopTest_Case4()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         -0.000000001, -0.00000001, 0.00000001, -0.0000001, -0.0000001, -0.000000001, 0.0, 0.000001, 0.000001, -0.00000005,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5 
@@ -156,7 +168,7 @@ void stopTest_Case4()
 
     int numOfRow = 10;
     int numOfClm = 3;
-    float const THRESHOLD = 1e-6;
+    double const THRESHOLD = 1e-6;
 
     //Create handler
     cublasHandle_t cublasHandler = NULL;
@@ -164,11 +176,11 @@ void stopTest_Case4()
 
 
     //(1) Allocate memory
-    float* mtxA_d = NULL;
-    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(float)));
+    double* mtxA_d = NULL;
+    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(double)));
     
     //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(double), cudaMemcpyHostToDevice));
     
     //(3) Check stops or not
     bool isStop = checkStop(cublasHandler, mtxA_d, numOfRow, numOfClm, THRESHOLD);
@@ -182,7 +194,7 @@ void stopTest_Case4()
 
 void stopTest_Case5()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         -0.000000001, -0.00000001, 0.00000001, -0.0000001, -0.0000001, -0.000000001, 0.0, 0.0000001, 0.0000001, -0.00000005,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5,
         0.000001, -0.000001, 0.00000001, 0.0001, 0.0000001, -0.000001, 2, 3, 4, 5 
@@ -190,7 +202,7 @@ void stopTest_Case5()
 
     int numOfRow = 10;
     int numOfClm = 3;
-    float const THRESHOLD = 1e-6;
+    double const THRESHOLD = 1e-6;
 
     //Create handler
     cublasHandle_t cublasHandler = NULL;
@@ -198,11 +210,11 @@ void stopTest_Case5()
 
 
     //(1) Allocate memory
-    float* mtxA_d = NULL;
-    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(float)));
+    double* mtxA_d = NULL;
+    CHECK(cudaMalloc((void**)& mtxA_d, numOfRow * numOfClm * sizeof(double)));
     
     //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, numOfRow * numOfClm * sizeof(double), cudaMemcpyHostToDevice));
     
     //(3) Check stops or not
     bool isStop = checkStop(cublasHandler, mtxA_d, numOfRow, numOfClm, THRESHOLD);

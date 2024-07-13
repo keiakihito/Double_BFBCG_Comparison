@@ -40,22 +40,22 @@ int main(int arg, char** argv)
     
     printf("\n\n= = = =inverseTest.cu= = = = \n\n");
     
-    // printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
-    // inverseTest_Case1();
+    printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
+    inverseTest_Case1();
 
-    // printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
-    // inverseTest_Case2();
+    printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
+    inverseTest_Case2();
 
-    // printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
-    // inverseTest_Case3();
+    printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
+    inverseTest_Case3();
 
-    // printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
-    // inverseTest_Case4();
+    printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
+    inverseTest_Case4();
 
     printf("\n\n🔍🔍🔍 Test Case 5 🔍🔍🔍\n\n");
     inverseTest_Case5();
 
-    printf("\n\n= = = = end of invereTest = = = =\n\n");
+    printf("\n\n= = = = ✅end of invereTest✅ = = = =\n\n");
 
     return 0;
 } // end of main
@@ -90,9 +90,9 @@ void inverseTest_Case1()
     */
 
     //Defince the dense matrix A column major
-    float mtxA[] = {4.0, 1.0, 1.0, 3.0};
-    float* mtxA_d = NULL;
-    float* mtxA_inv_d = NULL;
+    double mtxA[] = {4.0, 1.0, 1.0, 3.0};
+    double* mtxA_d = NULL;
+    double* mtxA_inv_d = NULL;
 
     const int N = 2;
     
@@ -105,11 +105,11 @@ void inverseTest_Case1()
 
 
     //(1) Allocate device memeory
-    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(float)));
-    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(float)));
+    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(double)));
 
     //(2) Copy data to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(double), cudaMemcpyHostToDevice));
     
     if(debug){
         printf("\n\n~~mtxA_d~~\n\n");
@@ -137,11 +137,11 @@ void inverseTest_Case1()
 
 void inverseTest_Case2()
 {
-    float mtxA[] = {4.0, 1.0, 1.0, 
+    double mtxA[] = {4.0, 1.0, 1.0, 
                     1.0, 3.0, 1.0,
                     1.0, 1.0, 5.0};
-    float* mtxA_d = NULL;
-    float* mtxA_inv_d = NULL;
+    double* mtxA_d = NULL;
+    double* mtxA_inv_d = NULL;
 
     const int N = 3;
 
@@ -153,11 +153,11 @@ void inverseTest_Case2()
 
 
     //(1) Allocate device memeory
-    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(float)));
-    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(float)));
+    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(double)));
 
     //(2) Copy data to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(double), cudaMemcpyHostToDevice));
     
     if(debug){
         printf("\n\n~~mtxA_d~~\n\n");
@@ -185,7 +185,7 @@ void inverseTest_Case2()
 
 void inverseTest_Case3()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         4.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
         1.0,  4.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
         0.0,  1.0,  4.0,  1.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  0.0,  0.0,
@@ -204,8 +204,8 @@ void inverseTest_Case3()
         0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1.0,  0.0,  0.0,  0.0,  1.0,  0.0,  0.0,  1.0,  4.0
     };
 
-    float* mtxA_d = NULL;
-    float* mtxA_inv_d = NULL;
+    double* mtxA_d = NULL;
+    double* mtxA_inv_d = NULL;
 
     const int N = 16;
 
@@ -217,11 +217,11 @@ void inverseTest_Case3()
 
 
     //(1) Allocate device memeory
-    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(float)));
-    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(float)));
+    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(double)));
 
     //(2) Copy data to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(double), cudaMemcpyHostToDevice));
     
     if(debug){
         printf("\n\n~~mtxA_d~~\n\n");
@@ -249,7 +249,7 @@ void inverseTest_Case3()
 
 void inverseTest_Case4()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         10.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234,
         0.234567, 11.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345,
         0.345678, 0.456789, 12.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456,
@@ -271,8 +271,8 @@ void inverseTest_Case4()
         0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 12.789012
     };
 
-    float* mtxA_d = NULL;
-    float* mtxA_inv_d = NULL;
+    double* mtxA_d = NULL;
+    double* mtxA_inv_d = NULL;
 
     const int N = 19;
 
@@ -284,11 +284,11 @@ void inverseTest_Case4()
 
 
     //(1) Allocate device memeory
-    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(float)));
-    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(float)));
+    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(double)));
 
     //(2) Copy data to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(double), cudaMemcpyHostToDevice));
     
     if(debug){
         printf("\n\n~~mtxA_d~~\n\n");
@@ -315,7 +315,7 @@ void inverseTest_Case4()
 
 void inverseTest_Case5()
 {
-    float mtxA[] = {
+    double mtxA[] = {
         0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234,
         0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345,
         0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456,
@@ -337,8 +337,8 @@ void inverseTest_Case5()
         0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012, 0.890123, 0.901234, 0.012345, 0.123456, 0.234567, 0.345678, 0.456789, 0.567890, 0.678901, 0.789012
     };
 
-    float* mtxA_d = NULL;
-    float* mtxA_inv_d = NULL;
+    double* mtxA_d = NULL;
+    double* mtxA_inv_d = NULL;
 
     const int N = 19;
 
@@ -350,11 +350,11 @@ void inverseTest_Case5()
 
 
     //(1) Allocate device memeory
-    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(float)));
-    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(float)));
+    CHECK(cudaMalloc((void**)&mtxA_d, N * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxA_inv_d, N * N * sizeof(double)));
 
     //(2) Copy data to device
-    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxA_d, mtxA, N * N * sizeof(double), cudaMemcpyHostToDevice));
     
     if(debug){
         printf("\n\n~~mtxA_d~~\n\n");
