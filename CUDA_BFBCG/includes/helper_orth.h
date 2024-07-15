@@ -14,7 +14,13 @@
 #include "helper_cuda.h"  
 #include "helper_debug.h"
 #include "helper_functions.h"
-#include "CSRMatrix.h"  
+#include "CSRMatrix.h"
+
+// Forward Declarations of functions from helper_functions.h
+void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxC_d, int numOfRow, int numOfClm);
+void multiply_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA);
+double* transpose_Den_Mtx(cublasHandle_t cublasHandler, double* mtxX_d, int numOfRow, int numOfClm);
+
 
 
 #define CHECK(call){ \
@@ -33,6 +39,8 @@
 //Output: double* mtxY_hat, the orthonormal set of matrix Z.
 void orth(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank);
 
+
+//For orth sub functions
 //Input: cusolverDnHandler, int number of row, int number of column, int leading dimensino, 
 //		 double* matrix A, double* matrix U, double* vector singlluar values, double* matrix V tranpose
 //Process: Singluar Value Decomposion
@@ -54,8 +62,6 @@ int setRank(double* sngVals_d, int currentRank, double threashold);
 //Process: the function calls kernel and normalize each column vector 
 //Output: double* mtxY_d, which will be updated as normalized matrix Y hat.
 void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRow, int numOfCol);
-
-
 
 
 
@@ -371,6 +377,8 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRo
 	free(norms_h);
 
 } // end of normalize_Den_Mtx
+
+
 
 
 
