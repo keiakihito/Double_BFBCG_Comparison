@@ -12,25 +12,25 @@
 
 
 //Utilities
-#include "../includes/helper_debug.h"
-// helper function CUDA error checking and initialization
-#include "../includes/helper_cuda.h"  
-#include "../includes/helper_functions.h"
-#include "../includes/helper_orth.h"
-#include "../includes/helper_bfbcg.h"
-#include "../includes/cusolver_utils.h"
-#include "../includes/CSRMatrix.h"
+#include "../include/utils/checks.h"
+#include "../include/functions/helper.h"
+#include "../include/functions/cuBLAS_util.h"
+#include "../include/functions/cuSPARSE_util.h"
+#include "../include/functions/cuSOLVER_util.h"
+#include "../include/functions/bfbcg.h"
+#include "../include/CSRMatrix.h"
 
 
 
-#define CHECK(call){ \
-    const cudaError_t cuda_ret = call; \
-    if(cuda_ret != cudaSuccess){ \
-        printf("Error: %s:%d,  ", __FILE__, __LINE__ );\
-        printf("code: %d, reason: %s \n", cuda_ret, cudaGetErrorString(cuda_ret));\
-        exit(-1); \
-    }\
-}
+
+// #define CHECK(call){ \
+//     const cudaError_t cuda_ret = call; \
+//     if(cuda_ret != cudaSuccess){ \
+//         printf("Error: %s:%d,  ", __FILE__, __LINE__ );\
+//         printf("code: %d, reason: %s \n", cuda_ret, cudaGetErrorString(cuda_ret));\
+//         exit(-1); \
+//     }\
+// }
 
 
 void bfbcgTest_Case1();
@@ -50,11 +50,11 @@ int main(int arg, char** argv)
     // printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
     // bfbcgTest_Case2();
 
-    printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
-    bfbcgTest_Case3();
+    // printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
+    // bfbcgTest_Case3();
 
-    // printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
-    // bfbcgTest_Case4();
+    printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
+    bfbcgTest_Case4();
 
     // printf("\n\n🔍🔍🔍 Test Case 5 🔍🔍🔍\n\n");
     // bfbcgTest_Case5();
@@ -72,7 +72,7 @@ void bfbcgTest_Case1()
     const int K = 5;
     const int N = 3;
 
-    bool debug = true;
+    bool debug = false;
     
     // double mtxA_h[] = {        
     //     10.840188, 0.394383, 0.000000, 0.000000, 0.000000,  
@@ -269,7 +269,7 @@ void bfbcgTest_Case2()
 
 void bfbcgTest_Case3()
 {
-    bool debug = true;
+    bool debug = false;
 
     const int M = 16;
     const int K = 16;
@@ -378,7 +378,6 @@ void bfbcgTest_Case3()
     //Solve AX = B with bfbcg method
     bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
 
-    debug = true;
     if(debug){
         printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
         print_mtx_clm_d(mtxSolX_d, K, N);
@@ -400,7 +399,64 @@ void bfbcgTest_Case3()
 } // end of tranposeTest_Case3
 
 
+void bfbcgTest_Case4()
+{
+    bool debug = false;
 
+    const int M = 32768;
+    const int K = 32768;
+    const int N = 16;
+    
+
+    CSRMatrix csrMtxA_h = generateSparseSPDMatrixCSR(M);
+    
+
+    double mtxB_h[K*N];
+    initializeRandom(mtxB_h, K, N);
+    
+
+    //(1) Allocate memory
+    double* mtxSolX_d = NULL;
+    double* mtxB_d = NULL;
+
+    CHECK(cudaMalloc((void**)&mtxSolX_d,  K * N * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxB_d,  M * N * sizeof(double)));
+
+    //(2) Copy value from host to device
+    CHECK(cudaMemcpy(mtxSolX_d, mtxB_h, K * N * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(mtxB_d, mtxB_h, M * N * sizeof(double), cudaMemcpyHostToDevice));
+
+    if(debug){
+        printf("\n\n~~csrMtxA_h~~\n\n");
+        print_CSRMtx(csrMtxA_h);
+        printf("\n\n~~mtxSolX~~\n\n");
+        print_mtx_clm_d(mtxSolX_d, K, N);
+        printf("\n\n~~mtxB~~\n\n");
+        print_mtx_clm_d(mtxB_d, M, N);
+    }
+
+    //Solve AX = B with bfbcg method
+    bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
+
+    if(debug){
+        printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
+        print_mtx_clm_d(mtxSolX_d, K, N);
+    }
+
+    //Validate
+    //R = B - AX
+    printf("\n\n\n\n🔍👀Validate Solution Matrix X 🔍👀");
+    double twoNorms = validateBFBCG(csrMtxA_h, M, mtxSolX_d, N, mtxB_d);
+    printf("\n\n~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : %f ~~~\n\n", twoNorms);
+
+
+    // //()Free memeory
+    // free(mtxA_h); // Generate Sample Case
+    freeCSRMatrix(csrMtxA_h);
+    CHECK(cudaFree(mtxSolX_d));
+    CHECK(cudaFree(mtxB_d));
+
+} // end of tranposeTest_Case4
 
 
 
