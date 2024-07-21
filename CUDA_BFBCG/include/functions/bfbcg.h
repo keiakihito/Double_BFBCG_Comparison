@@ -26,7 +26,9 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 //Output: double* mtxSolX_d
 void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, int numOfColX)
 {	
+	
 	bool debug = false;
+	double startTime, endTime; // For bench mark
 
 	int crrntRank = numOfColX;
 	//FIXME THRESHOLD 1e-4~ mtxP is too small.
@@ -134,8 +136,14 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		
 		
 		//Q <- AP
+		startTime = myCPUTimer();
 		multiply_Sprc_Den_mtx(cusparseHandler, csrMtxA, mtxP_d, crrntRank, mtxQ_d);
-		// multiply_Den_ClmM_mtx_mtx(cublasHandler, mtxA_d, mtxP_d, mtxQ_d, numOfA, crrntRank, numOfA);
+		endTime = myCPUTimer();
+		
+		if(counter == 1){
+			printf("\nQ <- AP: %f s \n", endTime - startTime);
+		}
+		
 		if(debug){
 			// printf("\n\n~~csrMtxA~~\n\n");
 			// print_CSRMtx(csrMtxA);
@@ -144,6 +152,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		}
 
 		//(P'Q)^{-1}, save for the beta calculation
+		startTime = myCPUTimer();
 		multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxP_d, mtxQ_d, mtxPTQ_d, numOfA, crrntRank, crrntRank);
 		if(debug){
 			printf("\n\n~~mtxPTQ~~\n\n");
@@ -174,14 +183,22 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 				printf("\n\n = = mtxPTQ_inv_d: %f = = \n", *alpha_h);
 			}
 			
-			// CHECK_CUSOLVER(cublasSscal(handle, 3, &alpha, d_B, 1));
 			CHECK_CUBLAS(cublasDscal(cublasHandler, numOfColX, alpha_h, mtxAlph_d, crrntRank));
+			endTime = myCPUTimer();
+			if(counter == 1){
+				printf("\nAlpha <- (P'Q)^{-1} * (P'R): %f s \n", endTime - startTime);
+			}
 			if(debug){
 				printf("\n\n~~mtxAlph_d~~\n\n");
 				print_mtx_clm_d(mtxAlph_d, crrntRank, numOfColX);
 			}
+
 		}else{
 			multiply_Den_ClmM_mtx_mtx(cublasHandler, mtxPTQ_inv_d, mtxPTR_d, mtxAlph_d, crrntRank, numOfColX, crrntRank);
+			endTime = myCPUTimer();
+			if(counter == 1){
+				printf("\nAlpha <- (P'Q)^{-1} * (P'R): %f s \n", endTime - startTime);
+			}
 			if(debug){
 				printf("\n\n~~mtxAlpha~~\n\n");
 				print_mtx_clm_d(mtxAlph_d, crrntRank, numOfColX);
@@ -190,14 +207,26 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 
 		//X_{i+1} <- x_{i} + P * alpha
+		startTime = myCPUTimer();
 		multiply_sum_Den_ClmM_mtx_mtx(cublasHandler, mtxP_d, mtxAlph_d, mtxSolX_d, numOfA, numOfColX, crrntRank);
+		endTime = myCPUTimer();
+		if(counter == 1){
+			printf("\nX_{i+1} <- x_{i} + P * alpha: %f s \n", endTime - startTime);
+		}
+
 		if(debug){
 			printf("\n\n~~mtxSolX_d~~\n\n");
 			print_mtx_clm_d(mtxSolX_d, numOfA, numOfColX);
 		}
 
 		//R_{i+1} <- R_{i} - Q * alpha
+		startTime = myCPUTimer();
 		subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandler, mtxQ_d, mtxAlph_d, mtxR_d, numOfA, crrntRank, numOfColX);
+		endTime = myCPUTimer();
+		if(counter == 1){
+			printf("\nR_{i+1} <- R_{i} - Q * alpha: %f s \n", endTime - startTime);
+		}
+
 		if(debug){
 			printf("\n\n~~mtxR_d~~\n\n");
 			print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
@@ -217,7 +246,12 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		}
 
 		// Z_{i+1} <- MR_{i+1}
+		startTime = myCPUTimer();
 		multiply_Sprc_Den_mtx(cusparseHandler, csrMtxM, mtxR_d, numOfColX, mtxZ_d);
+		endTime = myCPUTimer();
+		if(counter == 1){
+			printf("\nZ_{i+1} <- MR_{i+1}: %f s \n", endTime - startTime);
+		}
 		if(debug){
 			printf("\n\n~~mtxZ~~\n\n");
 			print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);
@@ -228,6 +262,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 
 		//(Q'Z_{i+1})
+		startTime = myCPUTimer();
 		multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxQ_d, mtxZ_d, mtxQTZ_d, numOfA, crrntRank, numOfColX);
 		if(debug){
 			printf("\n\n~~mtxQTZ~~\n\n");
@@ -240,12 +275,14 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 			// Copy data to mtxBta to overwrite as an answer
 			CHECK(cudaMemcpy(mtxBta_d, mtxQTZ_d, numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
 			CHECK(cudaMemcpy(beta_h, mtxPTQ_inv_d, crrntRank * sizeof(double), cudaMemcpyDeviceToHost));
-			// printf("\n\n = =  mtxPTQ_inv_d: %f = = \n", *beta_h);
 			*beta_h *= -1.0f;
-			// printf("\n\n = =  - mtxPTQ_inv_d: %f = = \n", *beta_h);
 
-			//TODO check
 			CHECK_CUBLAS(cublasDscal(cublasHandler, numOfColX, beta_h, mtxBta_d, crrntRank));
+			endTime = myCPUTimer();
+			if(counter == 1){
+				printf("\nbeta <- -(P'Q)^{-1} * (Q'Z_{i+1}): %f s \n", endTime - startTime);
+			}
+
 			if(debug){
 				printf("\n\n~~mtxBta_d~~\n\n");
 				print_mtx_clm_d(mtxBta_d, crrntRank, numOfColX);
@@ -253,6 +290,10 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 		}else{
 			multiply_ngt_Den_ClmM_mtx_mtx(cublasHandler, mtxPTQ_inv_d, mtxQTZ_d, mtxBta_d, crrntRank, numOfColX, crrntRank);
+			endTime = myCPUTimer();
+			if(counter == 1){
+				printf("\nbeta <- -(P'Q)^{-1} * (Q'Z_{i+1}): %f s \n", endTime - startTime);
+			}
 			if(debug){
 				printf("\n\n~~mtxBta_d~~\n\n");
 				print_mtx_clm_d(mtxBta_d, crrntRank, numOfColX);
@@ -264,6 +305,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		//P_{i+1} = orth(Z_{i+1} + p * beta)
 		//Z_{i+1} <- Z_{i+1} + p * beta overwrite with Sgemm function
 		//Then P_{i+1} <- orth(Z_{ i+1})
+		startTime = myCPUTimer();
 		multiply_sum_Den_ClmM_mtx_mtx(cublasHandler, mtxP_d, mtxBta_d, mtxZ_d, numOfA, numOfColX, crrntRank);
 		if(debug){
 			printf("\n\n~~ (mtxZ_{i+1}_d + p * beta) ~~\n\n");
@@ -272,6 +314,10 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 		//To update matrix P
 		orth(&mtxP_d, mtxZ_d, numOfA, numOfColX, crrntRank);
+		endTime = myCPUTimer();
+		if(counter == 1){
+			printf("\nP_{i+1} = orth(Z_{i+1} + p * beta): %f s \n", endTime - startTime);
+		}
 		if(debug){
 			printf("\n\n~~ mtxP_d <- orth(*)~~\n\n");
 			print_mtx_clm_d(mtxP_d, numOfA, crrntRank);
