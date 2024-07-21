@@ -92,7 +92,8 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 	//Set up before iterating
 	//R <- B - AX
-	den_mtx_subtract_multiply_Sprc_Den_mtx(csrMtxA, mtxSolX_d, numOfColX, mtxR_d);
+	den_mtx_subtract_multiply_Sprc_Den_mtx(cusparseHandler, csrMtxA, mtxSolX_d, numOfColX, mtxR_d);
+
 	// subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandler, mtxA_d, mtxSolX_d, mtxR_d, numOfA, numOfA, numOfColX);
 	
 	if(debug){
@@ -106,7 +107,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 	}
 
 	//Z <- MR
-	multiply_Sprc_Den_mtx(csrMtxM, mtxR_d, numOfColX, mtxZ_d);
+	multiply_Sprc_Den_mtx(cusparseHandler, csrMtxM, mtxR_d, numOfColX, mtxZ_d);
 	if(debug){
 		printf("\n\n~~mtxZ~~\n\n");
 		print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);
@@ -133,7 +134,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		
 		
 		//Q <- AP
-		multiply_Sprc_Den_mtx(csrMtxA, mtxP_d, crrntRank, mtxQ_d);
+		multiply_Sprc_Den_mtx(cusparseHandler, csrMtxA, mtxP_d, crrntRank, mtxQ_d);
 		// multiply_Den_ClmM_mtx_mtx(cublasHandler, mtxA_d, mtxP_d, mtxQ_d, numOfA, crrntRank, numOfA);
 		if(debug){
 			// printf("\n\n~~csrMtxA~~\n\n");
@@ -216,7 +217,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 		}
 
 		// Z_{i+1} <- MR_{i+1}
-		multiply_Sprc_Den_mtx(csrMtxM, mtxR_d, numOfColX, mtxZ_d);
+		multiply_Sprc_Den_mtx(cusparseHandler, csrMtxM, mtxR_d, numOfColX, mtxZ_d);
 		if(debug){
 			printf("\n\n~~mtxZ~~\n\n");
 			print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);

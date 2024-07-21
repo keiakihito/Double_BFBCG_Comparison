@@ -15,24 +15,24 @@
 //Input: const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmB, double * dnxMtxC_d
 //Process: Matrix Multiplication Sparse matrix and Dense matrix
 //Output: dnsMtxC_d, dense matrix C in device
-void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d);
+void multiply_Sprc_Den_mtx(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d);
 
 
 // Input: const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d
 // Process: Matrix Multiplication Sparse matrix and Dense vector
 // Output: dnsVecY_d, dense vector Y in device
-void multiply_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d);
+void multiply_Sprc_Den_vec(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d);
 
 
 //Input: double *dnsMtxB_d, const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmB, double * dnxMtxC_d
 //Process: perform C = C - AX
 //Output: dnsMtxC_d, dense matrix C in device
-void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d);
+void den_mtx_subtract_multiply_Sprc_Den_mtx(cusparseHandle_t cusparseHandler,double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d);
 
 //Input:
 //Process: perform vector y = y  - Ax
 //Output: dnsVecY_d, dense vector C in device
-void den_vec_subtract_multiplly_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d);
+void den_vec_subtract_multiplly_Sprc_Den_vec(cusparseHandle_t cusparseHandler, double *dnsVecX_d, double *dnsVecY_d);
 
 //Input
 //Process: perform r = b - Ax, dot product r' * r, then square norm
@@ -53,7 +53,7 @@ double validateBFBCG(const CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int
 //Input: const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmB, double * dnxMtxC_d
 //Process: Matrix Multiplication Sparse matrix and Dense matrix
 //Output: dnsMtxC_d, dense matrix C in device
-void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d)
+void multiply_Sprc_Den_mtx(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsMtxB_d, int numClmsB, double * dnsMtxC_d)
 {
 	int numRowsA = csrMtx.numOfRows;
 	int numClmsA = csrMtx.numOfClms;
@@ -80,8 +80,8 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numCl
 	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3) Crate cuSPARSE handle and descriptors
-	cusparseHandle_t cusparseHandler;
-	cusparseCreate(&cusparseHandler);
+	// cusparseHandle_t cusparseHandler;
+	// cusparseCreate(&cusparseHandler);
 
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnMatDescr_t mtxB, mtxC;
@@ -108,7 +108,7 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numCl
 	CHECK_CUSPARSE(cusparseDestroySpMat(mtxA));
 	CHECK_CUSPARSE(cusparseDestroyDnMat(mtxB));
 	CHECK_CUSPARSE(cusparseDestroyDnMat(mtxC));
-	CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
+	// CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
 
 	CHECK(cudaFree(dBuffer));
 	CHECK(cudaFree(row_offsets_d));
@@ -123,7 +123,7 @@ void multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxB_d, int numCl
 // Input: const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d
 // Process: Matrix Multiplication Sparse matrix and Dense vector
 // Output: dnsVecY_d, dense vector Y in device
-void multiply_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d)
+void multiply_Sprc_Den_vec(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d)
 {
 	int numRowsA = csrMtx.numOfRows;
 	int numColsA = csrMtx.numOfClms;
@@ -149,8 +149,8 @@ void multiply_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *d
 	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3)Create cuSPARSE handle and descriptors
-	cusparseHandle_t cusparseHandler;
-	cusparseCreate(&cusparseHandler);
+	// cusparseHandle_t cusparseHandler;
+	// cusparseCreate(&cusparseHandler);
 
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnVecDescr_t vecX, vecY;
@@ -178,7 +178,7 @@ void multiply_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *d
 	CHECK_CUSPARSE(cusparseDestroySpMat(mtxA));
 	CHECK_CUSPARSE(cusparseDestroyDnVec(vecX));
 	CHECK_CUSPARSE(cusparseDestroyDnVec(vecY));
-	CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
+	// CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
 
 	CHECK(cudaFree(dBuffer));
 	CHECK(cudaFree(row_offsets_d));
@@ -191,7 +191,7 @@ void multiply_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *d
 //Input: double *dnsMtxB_d, const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmB, double * dnxMtxC_d
 //Process: perform C = C - AX
 //Output: dnsMtxC_d, dense matrix C in device
-void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d) {
+void den_mtx_subtract_multiply_Sprc_Den_mtx(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsMtxX_d, int numClmsB, double *dnsMtxC_d) {
 	int numRowsA = csrMtx.numOfRows;
 	int numClmsA = csrMtx.numOfClms;
 	int nnz = csrMtx.numOfnz;
@@ -217,8 +217,8 @@ void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dns
 	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3) Crate cuSPARSE handle and descriptors
-	cusparseHandle_t cusparseHandler;
-	cusparseCreate(&cusparseHandler);
+	// cusparseHandle_t cusparseHandler;
+	// cusparseCreate(&cusparseHandler);
 
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnMatDescr_t mtxB, mtxC;
@@ -245,7 +245,7 @@ void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dns
 	CHECK_CUSPARSE(cusparseDestroySpMat(mtxA));
 	CHECK_CUSPARSE(cusparseDestroyDnMat(mtxB));
 	CHECK_CUSPARSE(cusparseDestroyDnMat(mtxC));
-	CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
+	// CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
 
 	CHECK(cudaFree(dBuffer));
 	CHECK(cudaFree(row_offsets_d));
@@ -258,7 +258,7 @@ void den_mtx_subtract_multiply_Sprc_Den_mtx(const CSRMatrix &csrMtx, double *dns
 //Input:
 //Process: perform vector y = y  - Ax
 //Output: dnsVecY_d, dense vector C in device
-void den_vec_subtract_multiplly_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d){
+void den_vec_subtract_multiplly_Sprc_Den_vec(cusparseHandle_t cusparseHandler, const CSRMatrix &csrMtx, double *dnsVecX_d, double *dnsVecY_d){
 	int numRowsA = csrMtx.numOfRows;
 	int numColsA = csrMtx.numOfClms;
 	int nnz = csrMtx.numOfnz;
@@ -283,8 +283,8 @@ void den_vec_subtract_multiplly_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dn
 	CHECK(cudaMemcpy(vals_d, csrMtx.vals, nnz * sizeof(double), cudaMemcpyHostToDevice));
 
 	//(3) Create cuSPARSE handle and descriptors
-	cusparseHandle_t cusparseHandler;
-	cusparseCreate(&cusparseHandler);
+	// cusparseHandle_t cusparseHandler;
+	// cusparseCreate(&cusparseHandler);
 
 	cusparseSpMatDescr_t mtxA;
 	cusparseDnVecDescr_t vecX, vecY;
@@ -312,7 +312,7 @@ void den_vec_subtract_multiplly_Sprc_Den_vec(const CSRMatrix &csrMtx, double *dn
 	CHECK_CUSPARSE(cusparseDestroySpMat(mtxA));
 	CHECK_CUSPARSE(cusparseDestroyDnVec(vecX));
 	CHECK_CUSPARSE(cusparseDestroyDnVec(vecY));
-	CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
+	// CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
 
 	CHECK(cudaFree(dBuffer));
 	CHECK(cudaFree(row_offsets_d));
@@ -328,9 +328,11 @@ double validateCG(const CSRMatrix &csrMtx, int numOfA, double *dnsVecX_d, double
 	double residual = 0.0f;
 
 	cublasHandle_t cublasHandler = NULL;
+	cusparseHandle_t cusparseHandler = NULL;
+	CHECK_CUSPARSE(cusparseCreate(&cusparseHandler));
 	CHECK_CUBLAS(cublasCreate(&cublasHandler));
 	
-	den_vec_subtract_multiplly_Sprc_Den_vec(csrMtx, dnsVecX_d, dnsVecY_d);
+	den_vec_subtract_multiplly_Sprc_Den_vec(cusparseHandler, csrMtx, dnsVecX_d, dnsVecY_d);
 	CHECK_CUBLAS(cublasDdot(cublasHandler, numOfA, dnsVecY_d, 1, dnsVecY_d, 1, &residual));	
 
 	CHECK_CUBLAS(cublasDestroy(cublasHandler));
@@ -346,15 +348,19 @@ double validateBFBCG(const CSRMatrix &csrMtx, int numOfA, double *dnsMtxX_d, int
 {
 	bool debug = false;
 	
-	den_mtx_subtract_multiply_Sprc_Den_mtx(csrMtx, dnsMtxX_d, numClmsB, dnsMtxC_d);
+	cublasHandle_t cublasHandler = NULL;
+	cusparseHandle_t cusparseHandler = NULL;
+	CHECK_CUSPARSE(cusparseCreate(&cusparseHandler));
+	CHECK_CUBLAS(cublasCreate(&cublasHandler));
+
+	den_mtx_subtract_multiply_Sprc_Den_mtx(cusparseHandler, csrMtx, dnsMtxX_d, numClmsB, dnsMtxC_d);
 	if(debug){
 		printf("\n\nmtxR = B - AX\n");
 		printf("~~mtxR~~\n\n");
 		print_mtx_clm_d(dnsMtxC_d, numOfA, numClmsB);
 	}
 	
-	cublasHandle_t cublasHandler = NULL;
-	CHECK_CUBLAS(cublasCreate(&cublasHandler));
+
 
 	double twoNorms = 0.0f;
 	calculateResidual(cublasHandler, dnsMtxC_d, numOfA, numClmsB, twoNorms);
