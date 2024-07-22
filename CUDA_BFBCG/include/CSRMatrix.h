@@ -24,18 +24,41 @@ struct CSRMatrix{
     int numOfnz;
     int *row_offsets;
     int *col_indices;
-    float *vals;
+    double *vals;
 };
+
+//Constructor like function
+CSRMatrix constructCSRMatrix(int numOfRow, int numOfClm, int nnz, int* row_offsets, int* col_indices, double* vals){
+    CSRMatrix csrMtx;
+    csrMtx.numOfRows = numOfRow;
+    csrMtx.numOfClms = numOfClm;
+    csrMtx.numOfnz = nnz;
+
+    csrMtx.row_offsets = (int*)malloc((numOfRow + 1) * sizeof(int));
+    csrMtx.col_indices = (int*)malloc(nnz * sizeof(int));
+    csrMtx.vals = (double*)malloc(nnz * sizeof(double));
+
+    if(!csrMtx.row_offsets || !csrMtx.col_indices || !csrMtx.vals){
+        fprintf(stderr, "\n\n!!!ERROR!!! Fail to allocate memory for CSR marix.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    memcpy(csrMtx.row_offsets, row_offsets, (numOfRow + 1) * sizeof(int));
+    memcpy(csrMtx.col_indices, col_indices, nnz * sizeof(int));
+    memcpy(csrMtx.vals, vals, nnz * sizeof(double));
+    
+    return csrMtx;
+}
 
 
 // Generate a random tridiagonal symmetric matrix
 //It comes from CUDA CG sample code to generate sparse tridiagobal matrix
-void genTridiag(int *I, int *J, float *val, int N, int nz) {
+void genTridiag(int *I, int *J, double *val, int N, int nz) {
     I[0] = 0;
     J[0] = 0;
     J[1] = 1;
-    val[0] = (float)rand() / RAND_MAX + 10.0f;
-    val[1] = (float)rand() / RAND_MAX;
+    val[0] = (double)rand() / RAND_MAX + 10.0f;
+    val[1] = (double)rand() / RAND_MAX;
     int start;
 
     for (int i = 1; i < N; i++) {
@@ -54,10 +77,10 @@ void genTridiag(int *I, int *J, float *val, int N, int nz) {
         }
 
         val[start] = val[start - 1];
-        val[start + 1] = (float)rand() / RAND_MAX + 10.0f;
+        val[start + 1] = (double)rand() / RAND_MAX + 10.0f;
 
         if (i < N - 1) {
-            val[start + 2] = (float)rand() / RAND_MAX;
+            val[start + 2] = (double)rand() / RAND_MAX;
         }
     }
 
@@ -69,7 +92,7 @@ CSRMatrix generateSparseSPDMatrixCSR(int N) {
     int nzMax = 3 * N - 2; // Maximum non-zero elements for a tridiagonal matrix
     int *row_offsets = (int*)malloc((N + 1) * sizeof(int));
     int *col_indices = (int*)malloc(nzMax * sizeof(int));
-    float *vals = (float*)malloc(nzMax * sizeof(float));
+    double *vals = (double*)malloc(nzMax * sizeof(double));
 
     genTridiag(row_offsets, col_indices, vals, N, nzMax);
 
@@ -89,7 +112,7 @@ CSRMatrix generateSparseSPDMatrixCSR(int N) {
 CSRMatrix generateSparseIdentityMatrixCSR(int N) {
     int *row_offsets = (int*)malloc((N + 1) * sizeof(int));
     int *col_indices = (int*)malloc(N * sizeof(int));
-    float *vals = (float*)malloc(N * sizeof(float));
+    double *vals = (double*)malloc(N * sizeof(double));
 
     if (!row_offsets || !col_indices || !vals) {
         fprintf(stderr, "\n\nFailed to allocate memory for CSR matrix. \n\n");
@@ -128,9 +151,9 @@ void freeCSRMatrix(CSRMatrix &csrMtx){
 } // end of freeCSRMatrix
 
 
-float* csrToDense(const CSRMatrix &csrMtx)
+double* csrToDense(const CSRMatrix &csrMtx)
 {
-    float *dnsMtx = (float*)calloc(csrMtx.numOfRows * csrMtx.numOfClms, sizeof(float));
+    double *dnsMtx = (double*)calloc(csrMtx.numOfRows * csrMtx.numOfClms, sizeof(double));
     for(int otWkr = 0; otWkr < csrMtx.numOfRows; otWkr++){
         for(int inWkr = csrMtx.row_offsets[otWkr]; inWkr < csrMtx.row_offsets[otWkr+1]; inWkr++){
             dnsMtx[otWkr * csrMtx.numOfClms + csrMtx.col_indices[inWkr]] = csrMtx.vals[inWkr];
