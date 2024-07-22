@@ -2,6 +2,7 @@
 #define CUSOLVER_UTIL_H
 
 #include <iostream>
+#include <cassert>
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
 #include <cstdlib>
@@ -11,6 +12,11 @@
 #include "helper.h"
 
 
+//Inverse funtion with sub functions
+//Input: double* matrix A, double* matrix A inverse, int N, number of Row or Column
+//Process: Inverse matrix
+//Output: mtxA_inv_d;
+void inverse_QR_Den_Mtx(cusolverDnHandle_t cusolverHandler, cublasHandle_t cublasHandler,  double* mtxA_d, double* mtxA_inv_d, int N);
 
 //Inverse funtion with sub functions
 //Input: double* matrix A, double* matrix A inverse, int N, number of Row or Column
@@ -45,7 +51,96 @@ double* extractSngVals(cusolverDnHandle_t cusolverHandler, int numOfRow, int num
 
 
 
-//Inverse
+//Inverse with QR decompostion
+void inverse_QR_Den_Mtx(cusolverDnHandle_t cusolverHandler, cublasHandle_t cublasHandler,  double* mtxA_d, double* mtxA_inv_d, int N)
+{	
+	//Check matrix is invertible or not.
+	const double CONDITION_NUM_THRESHOLD = 1000;
+	double conditionNum = computeConditionNumber(mtxA_d, N, N);
+	assert (conditionNum < CONDITION_NUM_THRESHOLD && "\n\n!!ill-conditioned matrix A in inverse function!!\n\n");
+	
+	bool debug = true;
+
+	double *mtxA_cpy_d = NULL;
+	double *tau_d = NULL;
+	const int lda = N; //Leading dimention of A
+
+
+	double *work_d = NULL;
+	int *devInfo = NULL;
+	int lwork = 0;
+
+	if(debug){
+        printf("\n\n~~mtxA_d~~\n\n");
+        print_mtx_clm_d(mtxA_d, N, N);
+    }
+
+	//(1) Allocate memoery
+	CHECK(cudaMalloc((void**)&mtxA_cpy_d, N * N * sizeof(double)));
+	CHECK(cudaMalloc((void**)&tau_d, N * sizeof(double)));
+	CHECK(cudaMalloc((void**)&devInfo, N * sizeof(int)));
+	
+	//(2) Make copy of mtxA
+	CHECK(cudaMemcpy(mtxA_cpy_d, mtxA_d, N * N * sizeof(double), cudaMemcpyDeviceToDevice));
+
+	if(debug){
+        printf("\n\n~~mtxA_cpy_d~~\n\n");
+        print_mtx_clm_d(mtxA_d, N, N);
+    }
+	
+	//(3) Create Identity matrix
+	createIdentityMtx(mtxA_inv_d, N);
+	if(debug){
+		printf("\n\n~~mtxA_inv_d (mtxI)~~\n\n");
+		print_mtx_clm_d(mtxA_inv_d, N, N);
+	}
+
+	//(4)Calculate work space for cusolver
+	CHECK_CUSOLVER(cusolverDnDgeqrf_bufferSize(cusolverHandler, N, N, mtxA_cpy_d, N, &lwork));
+	CHECK(cudaMalloc((void**)&work_d, lwork * sizeof(double)));
+	
+	//(5)Perform QR decomposition
+	CHECK_CUSOLVER(cusolverDnDgeqrf(cusolverHandler, N, N, mtxA_cpy_d, lda, tau_d, work_d, lwork, devInfo));
+
+	if(debug){
+        printf("\n\nAfter QR factorization\n");
+        printf("\n\n~~mtxA_cpy_d~~\n");
+        print_mtx_clm_d(mtxA_cpy_d, N, N);
+    }
+
+	//(6) Solve system
+	//Let (QR) * X = I, recall Q * Q^{-1} = Q * Q' = I where Q' is stored to mtxA_inv_d
+	//cusolverDnDormqr obtains Q' performing R * X = Q' * I where R is upper triangular matrix
+	CHECK_CUSOLVER(cusolverDnDormqr(cusolverHandler, CUBLAS_SIDE_LEFT, CUBLAS_OP_T, N, N, N, mtxA_cpy_d, lda, tau_d, mtxA_inv_d, lda, work_d, lwork, devInfo));
+	CHECK(cudaDeviceSynchronize());
+
+	//Solve RX = Q'
+	//cublasDtrsm is good for solving triangular linear system
+	//The result will be sotred to mtxA_inv_d  
+	const double alpha = 1.0;
+	CHECK_CUBLAS(cublasDtrsm(cublasHandler, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N, N, &alpha, mtxA_cpy_d, lda, mtxA_inv_d, lda));
+	
+	// //Check solver after QR decomposition was successful or not.
+	// CHECK(cudaMemcpy(&devInfo, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
+
+
+	//Check the result
+    if(debug){
+        printf("\n\nAfter RX = Q'\n");
+        printf("\n\n~~mtxA inverse~~\n\n");
+        print_mtx_clm_d(mtxA_inv_d, N, N);
+    }
+
+	//(7)Free memoery
+	CHECK(cudaFree(mtxA_cpy_d));
+	CHECK(cudaFree(tau_d));
+	CHECK(cudaFree(work_d));
+    CHECK(cudaFree(devInfo));
+    
+} // end of inverse_QR_Den_Mtx
+
+
+
 //Input: double* matrix A, double* matrix A inverse, int N, number of Row or Column
 //Process: Inverse matrix
 //Output: lfoat mtxQPT_d
@@ -147,9 +242,16 @@ void inverse_Den_Mtx(cusolverDnHandle_t cusolverHandler, double* mtxA_d, double*
     A * X = LU * X = I
     L * (UX) = L * Y = I
     UX = Y
+
+	cusolverDnDgetrf is LU decompostion such that A = L * U
+	cusolverDnDgetrs is solver such that 
+	AX = LUX = L(UX) = LY = I
+	So We do LY = I, then UX = Y to solve X
     */
+
+   //Solve UX = I 
     CHECK_CUSOLVER(cusolverDnDgetrs(cusolverHandler, CUBLAS_OP_N, N, N, mtxA_cpy_d, N, pivots_d, mtxA_inv_d, N, devInfo));
-	cudaDeviceSynchronize();
+	CHECK(cudaDeviceSynchronize());
 
 	//Check solver after LU decomposition was successful or not.
 	CHECK(cudaMemcpy(&devInfo_h, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
