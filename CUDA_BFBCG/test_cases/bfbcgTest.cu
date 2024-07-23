@@ -44,14 +44,14 @@ int main(int arg, char** argv)
     
     printf("\n\n= = = =bfbcgTest.cu= = = = \n\n");
     
-    // printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
-    // bfbcgTest_Case1();
+    printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
+    bfbcgTest_Case1();
 
-    // printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
-    // bfbcgTest_Case2();
+    printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
+    bfbcgTest_Case2();
 
-    // printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
-    // bfbcgTest_Case3();
+    printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
+    bfbcgTest_Case3();
 
     printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
     bfbcgTest_Case4();
@@ -68,6 +68,7 @@ int main(int arg, char** argv)
 
 void bfbcgTest_Case1()
 {
+    cudaDeviceSynchronize();
     const int M = 5;
     const int K = 5;
     const int N = 3;
@@ -159,7 +160,8 @@ void bfbcgTest_Case1()
 
 void bfbcgTest_Case2()
 {
-    bool debug = true;
+    cudaDeviceSynchronize();
+    bool debug = false;
 
     const int M = 10;
     const int K = 10;
@@ -177,7 +179,6 @@ void bfbcgTest_Case2()
     0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.513401 10.952229 0.916195 0.000000 
     0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.916195 10.635712 0.717297 
     0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.717297 10.141603 
-
     */
     
     
@@ -264,11 +265,9 @@ void bfbcgTest_Case2()
 
 } // end of tranposeTest_Case2
 
-
-
-
 void bfbcgTest_Case3()
 {
+    cudaDeviceSynchronize();
     bool debug = false;
 
     const int M = 16;
@@ -401,6 +400,7 @@ void bfbcgTest_Case3()
 
 void bfbcgTest_Case4()
 {
+    cudaDeviceSynchronize();
     bool debug = false;
 
     const int M = 32768;
@@ -463,155 +463,35 @@ void bfbcgTest_Case4()
 
 /*
 Sample Run
-
 = = = =bfbcgTest.cu= = = = 
+
 
 
 🔍🔍🔍 Test Case 1 🔍🔍🔍
 
 
 
-~~csrMtxA_h~~
-
-
-
-numOfRows: 5, numOfClms: 5 , number of non zero: 13
-
-row_offsets: 
-[ 0 2 5 8 11 13 ]
-
-
-col_indices: 
-[ 0 1 0 1 2 1 2 3 2 3 4 3 4 ]
-
-
-non zero values: 
-[ 10.840188 0.394383 0.394383 10.783099 0.798440 0.798440 10.911648 0.197551 0.197551 10.335223 0.768230 0.768230 10.277775 ]
-
-
-
-~~mtxSolX~~
-
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-
-
-~~mtxB~~
-
-1.000000 1.000000 1.000000 
-1.000000 1.000000 1.000000 
-1.000000 1.000000 1.000000 
-1.000000 1.000000 1.000000 
-1.000000 1.000000 1.000000 
-
-
 
 💫💫💫 Iteration 1 💫💫💫 
 
-= = current Rank: 1 = =
+= = current Rank: 3 = =
 
-🔍🔍🔍Relative Residue: 0.032755🔍🔍🔍
+Q <- AP: 0.000060 s 
 
+Alpha <- (P'Q)^{-1} * (P'R): 0.007182 s 
 
+X_{i+1} <- x_{i} + P * alpha: 0.000004 s 
 
+R_{i+1} <- R_{i} - Q * alpha: 0.000005 s 
 
-💫💫💫 Iteration 2 💫💫💫 
-
-= = current Rank: 1 = =
-
-🔍🔍🔍Relative Residue: 0.001141🔍🔍🔍
-
+🫥Relative Residue: 0.040127🫥
 
 
+Z_{i+1} <- MR_{i+1}: 0.000052 s 
 
-💫💫💫 Iteration 3 💫💫💫 
+beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000011 s 
 
-= = current Rank: 1 = =
-
-🔍🔍🔍Relative Residue: 0.000058🔍🔍🔍
-
-
-
-!!!Current Rank became 0!!!
- 🔸Exit iteration🔸
-
-
-~~📝📝📝Approximate Solution Marix📝📝📝~~
-
-0.089229 0.089229 0.089229 
-0.083259 0.083259 0.083259 
-0.083949 0.083949 0.083949 
-0.088412 0.088412 0.088412 
-0.090681 0.090681 0.090681 
-
-
-~~🔍👀Validate Solution Matrix X 🔍👀~~
-
-mtxR = B - AX
-~~mtxR~~
-
--0.000098 -0.000098 -0.000098 
--0.000009 -0.000009 -0.000009 
-0.000032 0.000032 0.000032 
--0.000002 -0.000002 -0.000002 
-0.000077 0.000077 0.000077 
-
-
-= = 1st Column Vector 2 norms: 0.000129 = =
-
-
-
-🔍🔍🔍 Test Case 2 🔍🔍🔍
-
-
-
-~~csrMtxA_h~~
-
-
-
-numOfRows: 5, numOfClms: 5 , number of non zero: 13
-
-row_offsets: 
-[ 0 2 5 8 11 13 ]
-
-
-col_indices: 
-[ 0 1 0 1 2 1 2 3 2 3 4 3 4 ]
-
-
-non zero values: 
-[ 10.840188 0.394383 0.394383 10.783099 0.798440 0.798440 10.911648 0.197551 0.197551 10.335223 0.768230 0.768230 10.277775 ]
-
-
-
-~~mtxSolX~~
-
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-
-
-~~mtxB~~
-
-1.100000 1.600000 2.100000 
-1.200000 1.700000 2.200000 
-1.300000 1.800000 2.300000 
-1.400000 1.900000 2.400000 
-1.500000 2.000000 2.500000 
-
-
-
-💫💫💫 Iteration 1 💫💫💫 
-
-= = current Rank: 2 = =
-
-🔍🔍🔍Relative Residue: 0.028722🔍🔍🔍
-
+P_{i+1} = orth(Z_{i+1} + p * beta): 0.001928 s 
 
 
 
@@ -619,16 +499,7 @@ non zero values:
 
 = = current Rank: 2 = =
 
-🔍🔍🔍Relative Residue: 0.000541🔍🔍🔍
-
-
-
-
-💫💫💫 Iteration 3 💫💫💫 
-
-= = current Rank: 1 = =
-
-🔍🔍🔍Relative Residue: 0.000000🔍🔍🔍
+🫥Relative Residue: 0.000000🫥
 
 
 
@@ -636,28 +507,190 @@ non zero values:
 
 
 
-~~📝📝📝Approximate Solution Marix📝📝📝~~
-
-0.097851 0.142461 0.187071 
-0.099589 0.141219 0.182848 
-0.109621 0.151597 0.193573 
-0.123200 0.167405 0.211611 
-0.136737 0.182082 0.227426 
-
-
 ~~🔍👀Validate Solution Matrix X 🔍👀~~
 
-mtxR = B - AX
-~~mtxR~~
-
-0.000000 0.000000 -0.000000 
-0.000000 -0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-0.000000 0.000000 0.000000 
-
-
 = = 1st Column Vector 2 norms: 0.000000 = =
+
+
+
+🔍🔍🔍 Test Case 2 🔍🔍🔍
+
+
+
+
+💫💫💫 Iteration 1 💫💫💫 
+
+= = current Rank: 5 = =
+
+Q <- AP: 0.000060 s 
+
+Alpha <- (P'Q)^{-1} * (P'R): 0.001926 s 
+
+X_{i+1} <- x_{i} + P * alpha: 0.000004 s 
+
+R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
+
+🫥Relative Residue: 0.054932🫥
+
+
+Z_{i+1} <- MR_{i+1}: 0.000049 s 
+
+beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000010 s 
+
+P_{i+1} = orth(Z_{i+1} + p * beta): 0.002170 s 
+
+
+
+💫💫💫 Iteration 2 💫💫💫 
+
+= = current Rank: 5 = =
+
+🫥Relative Residue: 0.000000🫥
+
+
+
+🌀🌀🌀CONVERGED🌀🌀🌀
+
+
+
+
+
+🔍👀Validate Solution Matrix X 🔍👀
+
+~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000000 ~~~
+
+
+
+🔍🔍🔍 Test Case 3 🔍🔍🔍
+
+
+
+
+💫💫💫 Iteration 1 💫💫💫 
+
+= = current Rank: 15 = =
+
+Q <- AP: 0.000068 s 
+
+Alpha <- (P'Q)^{-1} * (P'R): 0.002644 s 
+
+X_{i+1} <- x_{i} + P * alpha: 0.000005 s 
+
+R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
+
+🫥Relative Residue: 0.004301🫥
+
+
+Z_{i+1} <- MR_{i+1}: 0.000057 s 
+
+beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000011 s 
+
+P_{i+1} = orth(Z_{i+1} + p * beta): 0.002468 s 
+
+
+
+💫💫💫 Iteration 2 💫💫💫 
+
+= = current Rank: 1 = =
+
+🫥Relative Residue: 0.000000🫥
+
+
+
+🌀🌀🌀CONVERGED🌀🌀🌀
+
+
+
+
+
+🔍👀Validate Solution Matrix X 🔍👀
+
+~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000000 ~~~
+
+
+
+🔍🔍🔍 Test Case 4 🔍🔍🔍
+
+
+
+
+💫💫💫 Iteration 1 💫💫💫 
+
+= = current Rank: 16 = =
+
+Q <- AP: 0.000295 s 
+
+Alpha <- (P'Q)^{-1} * (P'R): 0.002734 s 
+
+X_{i+1} <- x_{i} + P * alpha: 0.000006 s 
+
+R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
+
+🫥Relative Residue: 0.080048🫥
+
+
+Z_{i+1} <- MR_{i+1}: 0.000130 s 
+
+beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000016 s 
+
+P_{i+1} = orth(Z_{i+1} + p * beta): 0.004892 s 
+
+
+
+💫💫💫 Iteration 2 💫💫💫 
+
+= = current Rank: 16 = =
+
+🫥Relative Residue: 0.006311🫥
+
+
+
+
+💫💫💫 Iteration 3 💫💫💫 
+
+= = current Rank: 16 = =
+
+🫥Relative Residue: 0.000530🫥
+
+
+
+
+💫💫💫 Iteration 4 💫💫💫 
+
+= = current Rank: 16 = =
+
+🫥Relative Residue: 0.000047🫥
+
+
+
+
+💫💫💫 Iteration 5 💫💫💫 
+
+= = current Rank: 16 = =
+
+🫥Relative Residue: 0.000004🫥
+
+
+
+
+💫💫💫 Iteration 6 💫💫💫 
+
+= = current Rank: 16 = =
+
+🫥Relative Residue: 0.000000🫥
+
+
+
+!!!Current Rank became 0!!!
+ 🔸Exit iteration🔸
+
+
+
+
+🔍👀Validate Solution Matrix X 🔍👀
+
+~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000392 ~~~
+
 
 
 = = = = end of bfbcgTest = = = =

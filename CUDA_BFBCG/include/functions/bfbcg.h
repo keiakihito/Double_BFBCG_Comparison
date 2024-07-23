@@ -8,6 +8,7 @@
 #include <cusolverDn.h>
 #include <cublas_v2.h>
 #include <cstdlib>
+#include <cassert>
 #include <cmath>
 #include <sys/time.h>
 
@@ -75,7 +76,6 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 	CHECK(cudaMalloc((void**)&mtxPTQ_inv_d, crrntRank * crrntRank * sizeof(double)));
 	CHECK(cudaMalloc((void**)&mtxPTR_d, crrntRank * numOfA * sizeof(double)));
 	CHECK(cudaMalloc((void**)&mtxAlph_d, crrntRank * numOfColX * sizeof(double)));
-	// CHECK(cudaMalloc((void**)&sclAlph_d, sizeof(double)));
 	CHECK(cudaMalloc((void**)&mtxBta_d, crrntRank * numOfColX * sizeof(double)));
 	CHECK(cudaMalloc((void**)&mtxQTZ_d, crrntRank * numOfA * sizeof(double)));
 
@@ -128,7 +128,7 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 
 	//Start iteration
 	int counter = 1;
-	const int MAX_COUNT = 10;
+	const int MAX_COUNT = 100;
 	while(counter < MAX_COUNT){
 
 		printf("\n\n\n💫💫💫 Iteration %d 💫💫💫 \n", counter);
@@ -159,7 +159,16 @@ void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, in
 			print_mtx_clm_d(mtxPTQ_d, crrntRank, crrntRank);
 		}
 
-		inverse_Den_Mtx(cusolverHandler, mtxPTQ_d, mtxPTQ_inv_d, crrntRank);
+		//Check matrix is invertible or not.
+		const double CONDITION_NUM_THRESHOLD = 1000;
+		double conditionNum = computeConditionNumber(mtxPTQ_d, crrntRank, crrntRank);
+		assert (conditionNum < CONDITION_NUM_THRESHOLD && "\n\n!!ill-conditioned matrix A in inverse function!!\n\n");
+		
+		//LU factorization inverse
+		// inverse_Den_Mtx(cusolverHandler, mtxPTQ_d, mtxPTQ_inv_d, crrntRank);
+		
+		//QR decompostion inverse
+		inverse_QR_Den_Mtx(cusolverHandler, cublasHandler, mtxPTQ_d, mtxPTQ_inv_d, crrntRank);
 		if(debug){
 			printf("\n\n~~mtxPTQ_inv~~\n\n");
 			print_mtx_clm_d(mtxPTQ_inv_d, crrntRank, crrntRank);
