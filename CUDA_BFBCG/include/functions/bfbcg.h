@@ -1,695 +1,368 @@
-// includes, system
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
+#ifndef BFBCG_H
+#define BFBCG_H
 
-/*Using updated (v2) interfaces to cublas*/
-#include<cublas_v2.h>
-#include<cuda_runtime.h>
-#include<cusparse.h>
+
+#include <iostream>
+#include <cuda_runtime.h>
+#include <cusparse.h>
 #include <cusolverDn.h>
-#include<sys/time.h>
+#include <cublas_v2.h>
+#include <cstdlib>
+#include <cassert>
+#include <cmath>
+#include <sys/time.h>
+
+// helper function CUDA error checking and initialization
+#include "helper.h"
+#include "cuBLAS_util.h"
+#include "cuSPARSE_util.h"
+#include "orth_SVD.h"
+#include "orth_QR.h"
 
 
-//Utilities
-#include "../include/utils/checks.h"
-#include "../include/functions/helper.h"
-#include "../include/functions/cuBLAS_util.h"
-#include "../include/functions/cuSPARSE_util.h"
-#include "../include/functions/cuSOLVER_util.h"
-#include "../include/functions/bfbcg.h"
-#include "../include/CSRMatrix.h"
+void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, int numOfColX);
 
-
-
-
-// #define CHECK(call){ \
-//     const cudaError_t cuda_ret = call; \
-//     if(cuda_ret != cudaSuccess){ \
-//         printf("Error: %s:%d,  ", __FILE__, __LINE__ );\
-//         printf("code: %d, reason: %s \n", cuda_ret, cudaGetErrorString(cuda_ret));\
-//         exit(-1); \
-//     }\
-// }
-
-
-void bfbcgTest_Case1();
-void bfbcgTest_Case2();
-void bfbcgTest_Case3();
-void bfbcgTest_Case4();
-void bfbcgTest_Case5();
-
-int main(int arg, char** argv)
-{
+//Breakdown Free Block Conjugate Gradient (BFBCG) function
+//Input: double* mtxA_d, double* mtxB_d, double* mtxSolX_d, int numOfA, int numOfColX
+//Process: Solve AX = B where A is sparse matrix, X is solutoinn column vectors and B is given column vectors
+//Output: double* mtxSolX_d
+void bfbcg(CSRMatrix &csrMtxA, double* mtxSolX_d, double* mtxB_d, int numOfA, int numOfColX)
+{   
     
-    printf("\n\n= = = =bfbcgTest.cu= = = = \n\n");
-    
-    // printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
-    // bfbcgTest_Case1();
-
-    // printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
-    // bfbcgTest_Case2();
-
-    // printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
-    // bfbcgTest_Case3();
-
-    printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
-    bfbcgTest_Case4();
-
-
-    printf("\n\n= = = = end of bfbcgTest = = = =\n\n");
-
-    return 0;
-} // end of main
-
-
-
-void bfbcgTest_Case1()
-{
-    cudaDeviceSynchronize();
-    const int M = 5;
-    const int K = 5;
-    const int N = 3;
-
     bool debug = false;
+    double startTime, endTime; // For bench mark
+
+    int crrntRank = numOfColX;
+    //FIXME THRESHOLD 1e-4~ mtxP is too small.
+    const double THRESHOLD = 1e-6;
+    bool isStop = false;
+
+    double* mtxR_d = NULL; // Residual
+    CSRMatrix csrMtxM = generateSparseIdentityMatrixCSR(numOfA); // Precondtion
+    double* mtxZ_d = NULL; // Residual * precondition
+    double* mtxP_d = NULL; // Search space
+    double* mtxQ_d = NULL; // Q <- A * P
+    double* mtxPTQ_d = NULL; // To calculate mtxPTQ_inv_d
+    double* mtxPTQ_inv_d = NULL; // Save it for beta calulatoin
+    double* mtxPTR_d = NULL; 
+    double* mtxAlph_d = NULL; // Alpha
+    // double* sclAlph_d = NULL; // Alpha for scaler
+    double* alpha_h = NULL; // sclaler for alpha in case alpha is 1 by 1
+    double* mtxBta_d = NULL; // Beta
+    double* beta_h = NULL; // sclaler for alpha in case alpha is 1 by 1
+    double* mtxQTZ_d = NULL; // For calculating mtxBta
+
     
-    // double mtxA_h[] = {        
-    //     10.840188, 0.394383, 0.000000, 0.000000, 0.000000,  
-    //     0.394383, 10.783099, 0.798440, 0.000000, 0.000000, 
-    //     0.000000, 0.798440, 10.911648, 0.197551, 0.000000, 
-    //     0.000000, 0.000000, 0.197551, 10.335223, 0.768230, 
-    //     0.000000, 0.000000, 0.000000, 0.768230, 10.277775 
-    // };
+    //For calculating relative residual during the iteration
+    double orgRsdl_h = 0.0f; // Initial residual
+    double newRsdl_h = 0.0f; // New residual dring the iteration
+    double rltvRsdl_h = 0.0f; // Relateive resitual
 
-    //Sparse matrix 
+
+    //Crete handler
+    cublasHandle_t cublasHandler = NULL;
+    cusparseHandle_t cusparseHandler = NULL;
+    cusolverDnHandle_t cusolverHandler = NULL;
     
-    int rowOffSets[] = {0, 2, 5, 8, 11, 13};
-    int colIndices[] = {0, 1, 0, 1, 2, 1, 2, 3, 2, 3, 4, 3, 4};
-    double vals[] = {10.840188, 0.394383, 
-                      0.394383, 10.783099, 0.798440, 
-                      0.798440, 10.911648, 0.197551,
-                      0.197551, 10.335223, 0.768230,
-                      0.768230, 10.277775};
-
-    int nnz = 13;
-
-
-    CSRMatrix csrMtxA_h = constructCSRMatrix(M, K, nnz, rowOffSets, colIndices, vals);
-
-
-    double mtxB_h[] = {-0.957936, 0.099025, -0.312390, -0.141889, 0.429427, 
-                    -0.372082, 0.848972, 0.054195, -0.952761, -0.007890,
-                    -0.128068, 0.481105, 0.733497, -0.859573, 0.249972};
-
-    // double mtxB_h[K*N];
-    // initializeRandom(mtxB_h, K, N);
-    // if(debug){
-    //     printf("\n\n~~mtxB_h~~\n\n");
-    //     print_mtx_clm_h(mtxB_h, K, N);    
-    // }
+    CHECK_CUBLAS(cublasCreate(&cublasHandler));
+    CHECK_CUSPARSE(cusparseCreate(&cusparseHandler));
+    CHECK_CUSOLVER(cusolverDnCreate(&cusolverHandler));
 
 
     //(1) Allocate memory
-    // double* mtxA_d = NULL;
-    double* mtxSolX_d = NULL;
-    double* mtxB_d = NULL;
+    CHECK(cudaMalloc((void**)&mtxR_d, numOfA * crrntRank * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxZ_d, numOfA * crrntRank * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxQ_d, numOfA * crrntRank * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxPTQ_d, crrntRank * crrntRank * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxPTQ_inv_d, crrntRank * crrntRank * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxPTR_d, crrntRank * numOfA * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxAlph_d, crrntRank * numOfColX * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxBta_d, crrntRank * numOfColX * sizeof(double)));
+    CHECK(cudaMalloc((void**)&mtxQTZ_d, crrntRank * numOfA * sizeof(double)));
 
-    // CHECK(cudaMalloc((void**)&mtxA_d,  M * K * sizeof(double)));
-    CHECK(cudaMalloc((void**)&mtxSolX_d,  K * N * sizeof(double)));
-    CHECK(cudaMalloc((void**)&mtxB_d,  M * N * sizeof(double)));
 
-    //(2) Copy value from host to device
-    // CHECK(cudaMemcpy(mtxA_d, mtxA_h, M * K * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(mtxSolX_d, mtxB_h, K * N * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(mtxB_d, mtxB_h, M * N * sizeof(double), cudaMemcpyHostToDevice));
+    alpha_h = (double*)malloc(sizeof(double));
+    beta_h = (double*)malloc(sizeof(double));
+    
 
+    //(2) Copy memory
+    CHECK(cudaMemcpy(mtxR_d, mtxB_d, numOfA * numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
     if(debug){
-        printf("\n\n~~csrMtxA_h~~\n\n");
-        print_CSRMtx(csrMtxA_h);
-        printf("\n\n~~mtxSolX~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-        printf("\n\n~~mtxB~~\n\n");
-        print_mtx_clm_d(mtxB_d, M, N);
+        printf("\n\n~~mtxR~~\n\n");
+        print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
     }
 
-    //Solve AX = B with bfbcg method
-    bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
 
+    //Set up before iterating
+    //R <- B - AX
+    den_mtx_subtract_multiply_Sprc_Den_mtx(cusparseHandler, csrMtxA, mtxSolX_d, numOfColX, mtxR_d);
+
+    // subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandler, mtxA_d, mtxSolX_d, mtxR_d, numOfA, numOfA, numOfColX);
+    
     if(debug){
-        printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
+        printf("\n\n~~mtxR~~\n\n");
+        print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
     }
 
-    //Validate
-    //R = B - AX
-    printf("\n\n~~🔍👀Validate Solution Matrix X 🔍👀~~");
-    double twoNorms = validateBFBCG(csrMtxA_h, M, mtxSolX_d, N, mtxB_d);
-    printf("\n\n= = 1st Column Vector 2 norms: %f = =\n\n", twoNorms);
-
-
-    //()Free memeory
-    freeCSRMatrix(csrMtxA_h);
-    CHECK(cudaFree(mtxSolX_d));
-    CHECK(cudaFree(mtxB_d));
-
-
-
-} // end of tranposeTest_Case1
-
-void bfbcgTest_Case2()
-{
-    cudaDeviceSynchronize();
-    bool debug = false;
-
-    const int M = 10;
-    const int K = 10;
-    const int N = 5;
-    
-    /*
-    SPD Tridiagonal Dense
-    10.840188 0.394383 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.394383 10.783099 0.798440 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.798440 10.911648 0.197551 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.197551 10.335223 0.768230 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.768230 10.277775 0.553970 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.553970 10.477397 0.628871 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.628871 10.364784 0.513401 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.513401 10.952229 0.916195 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.916195 10.635712 0.717297 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.717297 10.141603 
-    */
-    
-    
-    //Create Sample case to set up
-    // CSRMatrix csrMtxA_h =generateSparseSPDMatrixCSR(M);
-    // print_CSRMtx(csrMtxA_h);
-    // double* mtxA_h = csrToDense(csrMtxA_h);
-    // print_mtx_clm_h(mtxA_h, M, M);
-    
-    //Sparse matrix 
-    int rowOffSets[] = {0, 2, 5, 8, 11, 14, 17, 20, 23, 26, 28};
-    int colIndices[] = {0, 1, 0, 1, 2, 1, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9};
-    double vals[] = {10.840188, 0.394383,
-                    0.394383, 10.783099, 0.798440,
-                    0.798440, 10.911648, 0.197551,
-                    0.197551, 10.335223, 0.768230,
-                    0.768230, 10.277775, 0.553970,
-                    0.553970, 10.477397, 0.628871, 
-                    0.628871, 10.364784, 0.513401, 
-                    0.513401, 10.952229, 0.916195,
-                    0.916195, 10.635712, 0.717297,
-                    0.717297, 10.141603
-                    };
-
-    int nnz = 28;
-
-
-    CSRMatrix csrMtxA_h = constructCSRMatrix(M, K, nnz, rowOffSets, colIndices, vals);
-    
-    
-    double mtxB_h[] = {-0.917206, 0.742276, 0.899125, -0.558456, 0.726547,0.343939, -0.319879, -0.901800, 0.898783,-0.885493,
-                    -0.436044,-0.657422, -0.713946, -0.201146, -0.017785, -0.066716,-0.708516, 0.551868, 0.520759, -0.482016,
-                    0.951020, -0.664174, 0.354639, 0.692534, 0.972838, 0.722408, -0.002730, -0.239378, 0.006314, -0.667044,
-                    0.285601, 0.089107, -0.924769, 0.184726,0.530651, 0.801779, -0.471335, -0.789228, 0.899979,-0.572552,
-                    -0.674721, -0.536065, -0.229974, -0.388667,0.262788, 0.752241, 0.544616, 0.554272, 0.304109, 0.065375};
-     
-    // double mtxB_h[K*N];
-    // initializeRandom(mtxB_h, K, N);
-    // if(debug){
-    //     printf("\n\n~~mtxB_h~~\n\n");
-    //     print_mtx_clm_h(mtxB_h, K, N);    
-    // }
-
-    //(1) Allocate memory
-    double* mtxSolX_d = NULL;
-    double* mtxB_d = NULL;
-
-    CHECK(cudaMalloc((void**)&mtxSolX_d,  K * N * sizeof(double)));
-    CHECK(cudaMalloc((void**)&mtxB_d,  M * N * sizeof(double)));
-
-    //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxSolX_d, mtxB_h, K * N * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(mtxB_d, mtxB_h, M * N * sizeof(double), cudaMemcpyHostToDevice));
-
+    calculateResidual(cublasHandler, mtxR_d, numOfA, numOfColX, orgRsdl_h);
     if(debug){
-        printf("\n\n~~csrMtxA_h~~\n\n");
-        print_CSRMtx(csrMtxA_h);
-        printf("\n\n~~mtxSolX~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-        printf("\n\n~~mtxB~~\n\n");
-        print_mtx_clm_d(mtxB_d, M, N);
+        printf("\n\n~~original residual: %f~~\n\n", orgRsdl_h);
     }
 
-    //Solve AX = B with bfbcg method
-    bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
-
+    //Z <- MR
+    multiply_Sprc_Den_mtx(cusparseHandler, csrMtxM, mtxR_d, numOfColX, mtxZ_d);
     if(debug){
-        printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
+        printf("\n\n~~mtxZ~~\n\n");
+        print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);
+        printf("\n\n~~mtxR~~\n\n");
+        print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
     }
 
-    //Validate
-    //R = B - AX
-    printf("\n\n\n\n🔍👀Validate Solution Matrix X 🔍👀");
-    double twoNorms = validateBFBCG(csrMtxA_h, M, mtxSolX_d, N, mtxB_d);
-    printf("\n\n~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : %f ~~~\n\n", twoNorms);
-
-
-    // //()Free memeory
-    // free(mtxA_h); // Generate Sample Case
-    freeCSRMatrix(csrMtxA_h);
-    CHECK(cudaFree(mtxSolX_d));
-    CHECK(cudaFree(mtxB_d));
-
-} // end of tranposeTest_Case2
-
-void bfbcgTest_Case3()
-{
-    cudaDeviceSynchronize();
-    bool debug = false;
-
-    const int M = 16;
-    const int K = 16;
-    const int N = 15;
-    
-    /*
-    SPD Tridiagonal Dense
-    10.840188 0.394383 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.394383 10.783099 0.798440 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.798440 10.911648 0.197551 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.197551 10.335223 0.768230 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.768230 10.277775 0.553970 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.553970 10.477397 0.628871 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.628871 10.364784 0.513401 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.513401 10.952229 0.916195 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.916195 10.635712 0.717297 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.717297 10.141603 0.606969 0.000000 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.606969 10.016300 0.242887 0.000000 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.242887 10.137232 0.804177 0.000000 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.804177 10.156679 0.400944 0.000000 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.400944 10.129790 0.108809 0.000000 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.108809 10.998924 0.218257 
-    0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.218257 10.512933 
-    */
-    
-    
-    // //Create Sample case to set up
-    // CSRMatrix csrMtxA_h =generateSparseSPDMatrixCSR(M);
-    // print_CSRMtx(csrMtxA_h);
-    // double* mtxA_h = csrToDense(csrMtxA_h);
-    // print_mtx_clm_h(mtxA_h, M, M);
-    
-    //Sparse matrix 
-    int rowOffSets[] = {0, 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 46};
-    int colIndices[] = {0, 1, 0, 1, 2, 1, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6, 5, 6, 7, 6, 7, 8, 7, 8, 9, 8, 9, 10, 9, 10, 11, 10, 11, 12, 11, 12, 13, 12, 13, 14, 13, 14, 15, 14, 15};
-    double vals[] = {10.840188, 0.394383,
-                    0.394383, 10.783099, 0.798440,
-                    0.798440, 10.911648, 0.197551, 
-                    0.197551, 10.335223, 0.768230, 
-                    0.768230, 10.277775, 0.553970,
-                    0.553970, 10.477397, 0.628871,
-                    0.628871, 10.364784, 0.513401, 
-                    0.513401, 10.952229, 0.916195, 
-                    0.916195, 10.635712, 0.717297, 
-                    0.717297, 10.141603, 0.606969,
-                    0.606969, 10.016300, 0.242887,
-                    0.242887, 10.137232, 0.804177,
-                    0.804177, 10.156679, 0.400944, 
-                    0.400944, 10.129790, 0.108809, 
-                    0.108809, 10.998924, 0.218257, 
-                    0.218257, 10.512933
-                    };
-
-    int nnz = 46;
-
-
-    CSRMatrix csrMtxA_h = constructCSRMatrix(M, K, nnz, rowOffSets, colIndices, vals);
-    
-    double mtxB_h[] = {
-        -0.828583, -0.206065, -0.357603, 0.477982, -0.268613, -0.063139, 0.296667, -0.326744, 0.445940, -0.912228, 0.211429, 0.346067, 0.664094, 0.893560, 0.828269, -0.867125,
-        -0.394889, 0.143599, -0.608832, 0.495604, -0.445249, 0.363128, 0.031231, -0.144173, -0.497560, 0.282189, 0.928123, 0.864081, 0.645952, 0.110728, -0.585657, 0.817369,
-        0.904663, 0.056740, 0.295351, -0.363950, 0.993600, -0.407982, 0.309307, 0.439540, -0.320210, -0.479264, -0.214393, -0.656116, -0.585704, -0.386123, -0.523241, 0.019407,
-        0.757476, -0.132072, -0.484989, -0.687773, -0.768944, 0.546242, 0.168054, -0.266504, -0.171569, 0.096177, -0.402423, -0.525617, -0.793095, 0.011920, -0.708248, -0.888432,
-        -0.931341, 0.587103, -0.252382, -0.937740, -0.820880, -0.943076, 0.501800, -0.141089, -0.422340, -0.712593, 0.202795, -0.008043, -0.098716, 0.679554, -0.988636, -0.341239,
-        -0.452518, -0.473626, -0.029012, -0.221463, -0.927384, -0.860959, 0.512033, -0.098953, 0.235218, -0.890390, 0.375430, 0.442123, 0.121529, 0.667182, 0.553691, 0.190189,
-        0.254284, -0.698691, 0.252448, 0.433405, -0.641767, -0.245752, -0.707684, -0.064107, 0.041656, 0.495110, 0.927850, 0.942940, 0.174664, 0.939214, -0.398299, 0.722146,
-        -0.534412, 0.572688, -0.499316, -0.461795, 0.711730, -0.987283, 0.439252, -0.053052, -0.877674, -0.185318, -0.610929, 0.243856, -0.518136, 0.942762, -0.565955, 0.736148,
-        -0.755929, 0.686493, 0.169553, -0.397696, -0.559259, 0.461869, 0.538197, 0.482397, -0.043021, 0.466047, 0.425337, -0.868356, 0.405261, -0.972962, 0.853790, 0.870849,
-        0.599726, -0.645527, -0.590946, 0.311456, -0.632810, 0.848306, -0.741596, -0.510484, -0.337012, -0.352525, 0.733372, 0.144852, -0.409763, -0.832583, -0.118999, -0.165692,
-        0.853910, -0.949446, 0.436612, -0.705348, 0.512423, -0.025191, 0.777049, -0.530598, -0.559144, 0.202386, -0.398954, 0.846117, 0.229424, -0.545165, 0.716966, -0.170850,
-        -0.190692, -0.873980, -0.859394, 0.176498, 0.974326, -0.600990, 0.666015, -0.362686, 0.046485, 0.399387, 0.782166, 0.636723, 0.566804, -0.336833, -0.528969, 0.420714,
-        -0.286279, 0.907642, 0.715365, -0.773856, -0.117549, 0.492414, -0.304454, 0.323307, -0.305200, 0.296592, 0.169424, 0.924224, 0.751427, -0.113610, -0.246626, -0.439265,
-        0.012410, -0.106020, 0.737234, -0.013265, 0.292990, 0.403248, 0.624049, -0.660524, -0.197365, 0.406215, 0.976199, -0.630561, -0.930618, -0.552771, 0.790152, -0.216897,
-        -0.645129, 0.505517, 0.009247, 0.237322, -0.002069, 0.704793, -0.439371, 0.692731, 0.001385, 0.730053, 0.616955, -0.247188, -0.383557, -0.629671, 0.313547, 0.628853
-    };
-
-
-    // double mtxB_h[K*N];
-    // initializeRandom(mtxB_h, K, N);
-    // if(debug){
-    //     printf("\n\n~~mtxB_h~~\n\n");
-    //     print_mtx_clm_h(mtxB_h, K, N);    
-    // }
-    
-
-    //(1) Allocate memory
-    double* mtxSolX_d = NULL;
-    double* mtxB_d = NULL;
-
-    CHECK(cudaMalloc((void**)&mtxSolX_d,  K * N * sizeof(double)));
-    CHECK(cudaMalloc((void**)&mtxB_d,  M * N * sizeof(double)));
-
-    //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxSolX_d, mtxB_h, K * N * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(mtxB_d, mtxB_h, M * N * sizeof(double), cudaMemcpyHostToDevice));
+    //P <- orth(Z), mtxZ will be freed in the function
+    // orth_SVD(&mtxP_d, mtxZ_d, numOfA, crrntRank, crrntRank);
+    orth_QR(&mtxP_d, mtxZ_d, numOfA, crrntRank, crrntRank);
 
     if(debug){
-        printf("\n\n~~csrMtxA_h~~\n\n");
-        print_CSRMtx(csrMtxA_h);
-        printf("\n\n~~mtxSolX~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-        printf("\n\n~~mtxB~~\n\n");
-        print_mtx_clm_d(mtxB_d, M, N);
+        printf("\n\n = =  Current Rank: %d = = \n\n", crrntRank);
+        printf("\n\n~~mtxP~~\n\n");
+        print_mtx_clm_d(mtxP_d, numOfA, crrntRank);
     }
 
-    //Solve AX = B with bfbcg method
-    bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
+    //Start iteration
+    int counter = 1;
+    const int MAX_COUNT = 100;
+    while(counter < MAX_COUNT){
 
-    if(debug){
-        printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-    }
+        printf("\n\n\n💫💫💫 Iteration %d 💫💫💫 \n", counter);
+        printf("\n= = current Rank: %d = =\n", crrntRank);
+        
+        
+        //Q <- AP
+        startTime = myCPUTimer();
+        multiply_Sprc_Den_mtx(cusparseHandler, csrMtxA, mtxP_d, crrntRank, mtxQ_d);
+        endTime = myCPUTimer();
+        
+        if(counter == 1){
+            printf("\nQ <- AP: %f s \n", endTime - startTime);
+        }
+        
+        if(debug){
+            // printf("\n\n~~csrMtxA~~\n\n");
+            // print_CSRMtx(csrMtxA);
+            printf("\n\n~~mtxQ~~\n\n");
+            print_mtx_clm_d(mtxQ_d, numOfA, crrntRank);
+        }
 
-    //Validate
-    //R = B - AX
-    printf("\n\n\n\n🔍👀Validate Solution Matrix X 🔍👀");
-    double twoNorms = validateBFBCG(csrMtxA_h, M, mtxSolX_d, N, mtxB_d);
-    printf("\n\n~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : %f ~~~\n\n", twoNorms);
+        //(P'Q)^{-1}, save for the beta calculation
+        startTime = myCPUTimer();
+        multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxP_d, mtxQ_d, mtxPTQ_d, numOfA, crrntRank, crrntRank);
+        if(debug){
+            printf("\n\n~~mtxPTQ~~\n\n");
+            print_mtx_clm_d(mtxPTQ_d, crrntRank, crrntRank);
+        }
+
+        //Check matrix is invertible or not.
+        const double CONDITION_NUM_THRESHOLD = 1000;
+        double conditionNum = computeConditionNumber(mtxPTQ_d, crrntRank, crrntRank);
+        assert (conditionNum < CONDITION_NUM_THRESHOLD && "\n\n!!ill-conditioned matrix A in inverse function!!\n\n");
+        
+        //LU factorization inverse
+        // inverse_Den_Mtx(cusolverHandler, mtxPTQ_d, mtxPTQ_inv_d, crrntRank);
+        
+        //QR decompostion inverse
+        inverse_QR_Den_Mtx(cusolverHandler, cublasHandler, mtxPTQ_d, mtxPTQ_inv_d, crrntRank);
+        if(debug){
+            printf("\n\n~~mtxPTQ_inv~~\n\n");
+            print_mtx_clm_d(mtxPTQ_inv_d, crrntRank, crrntRank);
+        }
+
+        //(P'R)
+        multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxP_d, mtxR_d, mtxPTR_d, numOfA, crrntRank, numOfColX);
+        if(debug){
+            printf("\n\n~~mtxPTR~~\n\n");
+            print_mtx_clm_d(mtxPTR_d, crrntRank, numOfColX);
+        }
 
 
-    // //()Free memeory
-    // free(mtxA_h); // Generate Sample Case
-    freeCSRMatrix(csrMtxA_h);
-    CHECK(cudaFree(mtxSolX_d));
-    CHECK(cudaFree(mtxB_d));
+        //Alpha <- (P'Q)^{-1} * (P'R)
+        if(crrntRank == 1){
+            // Copy data to mtxAlpha to overwrite as an answer
+            // CHECK(cudaMalloc((void**)&mtxAlph_d, numOfColX * sizeof(double)));
+            CHECK(cudaMemcpy(mtxAlph_d, mtxPTR_d, numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
+            CHECK(cudaMemcpy(alpha_h, mtxPTQ_inv_d, sizeof(double), cudaMemcpyDeviceToHost));
+            if(debug){
+                printf("\n\n = = mtxPTQ_inv_d: %f = = \n", *alpha_h);
+            }
+            
+            CHECK_CUBLAS(cublasDscal(cublasHandler, numOfColX, alpha_h, mtxAlph_d, crrntRank));
+            endTime = myCPUTimer();
+            if(counter == 1){
+                printf("\nAlpha <- (P'Q)^{-1} * (P'R): %f s \n", endTime - startTime);
+            }
+            if(debug){
+                printf("\n\n~~mtxAlph_d~~\n\n");
+                print_mtx_clm_d(mtxAlph_d, crrntRank, numOfColX);
+            }
 
-} // end of tranposeTest_Case3
+        }else{
+            multiply_Den_ClmM_mtx_mtx(cublasHandler, mtxPTQ_inv_d, mtxPTR_d, mtxAlph_d, crrntRank, numOfColX, crrntRank);
+            endTime = myCPUTimer();
+            if(counter == 1){
+                printf("\nAlpha <- (P'Q)^{-1} * (P'R): %f s \n", endTime - startTime);
+            }
+            if(debug){
+                printf("\n\n~~mtxAlpha~~\n\n");
+                print_mtx_clm_d(mtxAlph_d, crrntRank, numOfColX);
+            }
+        }
 
 
-void bfbcgTest_Case4()
-{
-    cudaDeviceSynchronize();
-    bool debug = false;
+        //X_{i+1} <- x_{i} + P * alpha
+        startTime = myCPUTimer();
+        multiply_sum_Den_ClmM_mtx_mtx(cublasHandler, mtxP_d, mtxAlph_d, mtxSolX_d, numOfA, numOfColX, crrntRank);
+        endTime = myCPUTimer();
+        if(counter == 1){
+            printf("\nX_{i+1} <- x_{i} + P * alpha: %f s \n", endTime - startTime);
+        }
 
-    const int M = 32768; // 2^15
-    const int K = 32768;
-    const int N = 16;
+        if(debug){
+            printf("\n\n~~mtxSolX_d~~\n\n");
+            print_mtx_clm_d(mtxSolX_d, numOfA, numOfColX);
+        }
+
+        //R_{i+1} <- R_{i} - Q * alpha
+        startTime = myCPUTimer();
+        subtract_multiply_Den_mtx_ngtMtx_Mtx(cublasHandler, mtxQ_d, mtxAlph_d, mtxR_d, numOfA, crrntRank, numOfColX);
+        endTime = myCPUTimer();
+        if(counter == 1){
+            printf("\nR_{i+1} <- R_{i} - Q * alpha: %f s \n", endTime - startTime);
+        }
+
+        if(debug){
+            printf("\n\n~~mtxR_d~~\n\n");
+            print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
+        }
+        
+        calculateResidual(cublasHandler, mtxR_d, numOfA, numOfColX, newRsdl_h);
+        rltvRsdl_h = newRsdl_h / orgRsdl_h; // Calculate Relative Residue
+        printf("\n🫥Relative Residue: %f🫥\n\n", rltvRsdl_h);
     
 
-    CSRMatrix csrMtxA_h = generateSparseSPDMatrixCSR(M);
+        //If it is converged, then stopped.
+        isStop = checkStop(cublasHandler, mtxR_d, numOfA, numOfColX, THRESHOLD);
+        if(isStop)
+        {
+            printf("\n\n🌀🌀🌀CONVERGED🌀🌀🌀\n\n");
+            break;
+        }
+
+        // Z_{i+1} <- MR_{i+1}
+        startTime = myCPUTimer();
+        multiply_Sprc_Den_mtx(cusparseHandler, csrMtxM, mtxR_d, numOfColX, mtxZ_d);
+        endTime = myCPUTimer();
+        if(counter == 1){
+            printf("\nZ_{i+1} <- MR_{i+1}: %f s \n", endTime - startTime);
+        }
+        if(debug){
+            printf("\n\n~~mtxZ~~\n\n");
+            print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);
+            printf("\n\n~~mtxR~~\n\n");
+            print_mtx_clm_d(mtxR_d, numOfA, numOfColX);
+        }
+
+
+
+        //(Q'Z_{i+1})
+        startTime = myCPUTimer();
+        multiply_Den_ClmM_mtxT_mtx(cublasHandler, mtxQ_d, mtxZ_d, mtxQTZ_d, numOfA, crrntRank, numOfColX);
+        if(debug){
+            printf("\n\n~~mtxQTZ~~\n\n");
+            print_mtx_clm_d(mtxQTZ_d, crrntRank, numOfColX);
+        }
+
+        //beta <- -(P'Q)^{-1} * (Q'Z_{i+1})
+        if(crrntRank == 1){
+            
+            // Copy data to mtxBta to overwrite as an answer
+            CHECK(cudaMemcpy(mtxBta_d, mtxQTZ_d, numOfColX * sizeof(double), cudaMemcpyDeviceToDevice));
+            CHECK(cudaMemcpy(beta_h, mtxPTQ_inv_d, crrntRank * sizeof(double), cudaMemcpyDeviceToHost));
+            *beta_h *= -1.0f;
+
+            CHECK_CUBLAS(cublasDscal(cublasHandler, numOfColX, beta_h, mtxBta_d, crrntRank));
+            endTime = myCPUTimer();
+            if(counter == 1){
+                printf("\nbeta <- -(P'Q)^{-1} * (Q'Z_{i+1}): %f s \n", endTime - startTime);
+            }
+
+            if(debug){
+                printf("\n\n~~mtxBta_d~~\n\n");
+                print_mtx_clm_d(mtxBta_d, crrntRank, numOfColX);
+            }
+
+        }else{
+            multiply_ngt_Den_ClmM_mtx_mtx(cublasHandler, mtxPTQ_inv_d, mtxQTZ_d, mtxBta_d, crrntRank, numOfColX, crrntRank);
+            endTime = myCPUTimer();
+            if(counter == 1){
+                printf("\nbeta <- -(P'Q)^{-1} * (Q'Z_{i+1}): %f s \n", endTime - startTime);
+            }
+            if(debug){
+                printf("\n\n~~mtxBta_d~~\n\n");
+                print_mtx_clm_d(mtxBta_d, crrntRank, numOfColX);
+            }
+        }
+
+
+
+        //P_{i+1} = orth(Z_{i+1} + p * beta)
+        //Z_{i+1} <- Z_{i+1} + p * beta overwrite with Sgemm function
+        //Then P_{i+1} <- orth(Z_{ i+1})
+        startTime = myCPUTimer();
+        multiply_sum_Den_ClmM_mtx_mtx(cublasHandler, mtxP_d, mtxBta_d, mtxZ_d, numOfA, numOfColX, crrntRank);
+        if(debug){
+            printf("\n\n~~ (mtxZ_{i+1}_d + p * beta) ~~\n\n");
+            print_mtx_clm_d(mtxZ_d, numOfA, numOfColX);
+        }
+
+        //To update matrix P
+        // orth_SVD(&mtxP_d, mtxZ_d, numOfA, numOfColX, crrntRank);
+        orth_QR(&mtxP_d, mtxZ_d, numOfA, crrntRank, crrntRank);
+        endTime = myCPUTimer();
+        if(counter == 1){
+            printf("\nP_{i+1} = orth(Z_{i+1} + p * beta): %f s \n", endTime - startTime);
+        }
+        if(debug){
+            printf("\n\n~~ mtxP_d <- orth(*)~~\n\n");
+            print_mtx_clm_d(mtxP_d, numOfA, crrntRank);
+            printf("\n\n= = current Rank: %d = = \n\n", crrntRank);
+        }
+
+        if(crrntRank == 0)
+        {
+            printf("\n\n!!!Current Rank became 0!!!\n 🔸Exit iteration🔸\n");
+            break;
+        }
+
+        counter++;
+    } // end of while
+
+
+
+
+    //()Free memoery
+    CHECK_CUBLAS(cublasDestroy(cublasHandler));
+    CHECK_CUSPARSE(cusparseDestroy(cusparseHandler));
+    CHECK_CUSOLVER(cusolverDnDestroy(cusolverHandler));
+
+    CHECK(cudaFree(mtxR_d));
+    CHECK(cudaFree(mtxZ_d));
+    CHECK(cudaFree(mtxQ_d));
+    CHECK(cudaFree(mtxPTQ_d));
+    CHECK(cudaFree(mtxPTQ_inv_d));
+    CHECK(cudaFree(mtxPTR_d));
+    CHECK(cudaFree(mtxQTZ_d));
+    free(alpha_h);
+    free(beta_h);
     
+} // end of bfbcg
 
-    double mtxB_h[K*N];
-    initializeRandom(mtxB_h, K, N);
-    
-
-    //(1) Allocate memory
-    double* mtxSolX_d = NULL;
-    double* mtxB_d = NULL;
-
-    CHECK(cudaMalloc((void**)&mtxSolX_d,  K * N * sizeof(double)));
-    CHECK(cudaMalloc((void**)&mtxB_d,  M * N * sizeof(double)));
-
-    //(2) Copy value from host to device
-    CHECK(cudaMemcpy(mtxSolX_d, mtxB_h, K * N * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(mtxB_d, mtxB_h, M * N * sizeof(double), cudaMemcpyHostToDevice));
-
-    if(debug){
-        printf("\n\n~~csrMtxA_h~~\n\n");
-        print_CSRMtx(csrMtxA_h);
-        printf("\n\n~~mtxSolX~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-        printf("\n\n~~mtxB~~\n\n");
-        print_mtx_clm_d(mtxB_d, M, N);
-    }
-
-    //Solve AX = B with bfbcg method
-    bfbcg(csrMtxA_h, mtxSolX_d, mtxB_d, M, N);
-
-    if(debug){
-        printf("\n\n~~📝📝📝Approximate Solution Marix📝📝📝~~\n\n");
-        print_mtx_clm_d(mtxSolX_d, K, N);
-    }
-
-    //Validate
-    //R = B - AX
-    printf("\n\n\n\n🔍👀Validate Solution Matrix X 🔍👀");
-    double twoNorms = validateBFBCG(csrMtxA_h, M, mtxSolX_d, N, mtxB_d);
-    printf("\n\n~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : %f ~~~\n\n", twoNorms);
-
-
-    // //()Free memeory
-    // free(mtxA_h); // Generate Sample Case
-    freeCSRMatrix(csrMtxA_h);
-    CHECK(cudaFree(mtxSolX_d));
-    CHECK(cudaFree(mtxB_d));
-
-} // end of tranposeTest_Case4
-
-
-
-
-/*
-Sample Run
-= = = =bfbcgTest.cu= = = = 
-
-
-
-🔍🔍🔍 Test Case 1 🔍🔍🔍
-
-
-
-
-💫💫💫 Iteration 1 💫💫💫 
-
-= = current Rank: 3 = =
-
-Q <- AP: 0.000060 s 
-
-Alpha <- (P'Q)^{-1} * (P'R): 0.007182 s 
-
-X_{i+1} <- x_{i} + P * alpha: 0.000004 s 
-
-R_{i+1} <- R_{i} - Q * alpha: 0.000005 s 
-
-🫥Relative Residue: 0.040127🫥
-
-
-Z_{i+1} <- MR_{i+1}: 0.000052 s 
-
-beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000011 s 
-
-P_{i+1} = orth(Z_{i+1} + p * beta): 0.001928 s 
-
-
-
-💫💫💫 Iteration 2 💫💫💫 
-
-= = current Rank: 2 = =
-
-🫥Relative Residue: 0.000000🫥
-
-
-
-🌀🌀🌀CONVERGED🌀🌀🌀
-
-
-
-~~🔍👀Validate Solution Matrix X 🔍👀~~
-
-= = 1st Column Vector 2 norms: 0.000000 = =
-
-
-
-🔍🔍🔍 Test Case 2 🔍🔍🔍
-
-
-
-
-💫💫💫 Iteration 1 💫💫💫 
-
-= = current Rank: 5 = =
-
-Q <- AP: 0.000060 s 
-
-Alpha <- (P'Q)^{-1} * (P'R): 0.001926 s 
-
-X_{i+1} <- x_{i} + P * alpha: 0.000004 s 
-
-R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
-
-🫥Relative Residue: 0.054932🫥
-
-
-Z_{i+1} <- MR_{i+1}: 0.000049 s 
-
-beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000010 s 
-
-P_{i+1} = orth(Z_{i+1} + p * beta): 0.002170 s 
-
-
-
-💫💫💫 Iteration 2 💫💫💫 
-
-= = current Rank: 5 = =
-
-🫥Relative Residue: 0.000000🫥
-
-
-
-🌀🌀🌀CONVERGED🌀🌀🌀
-
-
-
-
-
-🔍👀Validate Solution Matrix X 🔍👀
-
-~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000000 ~~~
-
-
-
-🔍🔍🔍 Test Case 3 🔍🔍🔍
-
-
-
-
-💫💫💫 Iteration 1 💫💫💫 
-
-= = current Rank: 15 = =
-
-Q <- AP: 0.000068 s 
-
-Alpha <- (P'Q)^{-1} * (P'R): 0.002644 s 
-
-X_{i+1} <- x_{i} + P * alpha: 0.000005 s 
-
-R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
-
-🫥Relative Residue: 0.004301🫥
-
-
-Z_{i+1} <- MR_{i+1}: 0.000057 s 
-
-beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000011 s 
-
-P_{i+1} = orth(Z_{i+1} + p * beta): 0.002468 s 
-
-
-
-💫💫💫 Iteration 2 💫💫💫 
-
-= = current Rank: 1 = =
-
-🫥Relative Residue: 0.000000🫥
-
-
-
-🌀🌀🌀CONVERGED🌀🌀🌀
-
-
-
-
-
-🔍👀Validate Solution Matrix X 🔍👀
-
-~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000000 ~~~
-
-
-
-🔍🔍🔍 Test Case 4 🔍🔍🔍
-
-
-
-
-💫💫💫 Iteration 1 💫💫💫 
-
-= = current Rank: 16 = =
-
-Q <- AP: 0.000295 s 
-
-Alpha <- (P'Q)^{-1} * (P'R): 0.002734 s 
-
-X_{i+1} <- x_{i} + P * alpha: 0.000006 s 
-
-R_{i+1} <- R_{i} - Q * alpha: 0.000004 s 
-
-🫥Relative Residue: 0.080048🫥
-
-
-Z_{i+1} <- MR_{i+1}: 0.000130 s 
-
-beta <- -(P'Q)^{-1} * (Q'Z_{i+1}): 0.000016 s 
-
-P_{i+1} = orth(Z_{i+1} + p * beta): 0.004892 s 
-
-
-
-💫💫💫 Iteration 2 💫💫💫 
-
-= = current Rank: 16 = =
-
-🫥Relative Residue: 0.006311🫥
-
-
-
-
-💫💫💫 Iteration 3 💫💫💫 
-
-= = current Rank: 16 = =
-
-🫥Relative Residue: 0.000530🫥
-
-
-
-
-💫💫💫 Iteration 4 💫💫💫 
-
-= = current Rank: 16 = =
-
-🫥Relative Residue: 0.000047🫥
-
-
-
-
-💫💫💫 Iteration 5 💫💫💫 
-
-= = current Rank: 16 = =
-
-🫥Relative Residue: 0.000004🫥
-
-
-
-
-💫💫💫 Iteration 6 💫💫💫 
-
-= = current Rank: 16 = =
-
-🫥Relative Residue: 0.000000🫥
-
-
-
-!!!Current Rank became 0!!!
- 🔸Exit iteration🔸
-
-
-
-
-🔍👀Validate Solution Matrix X 🔍👀
-
-~~~ mtxR = B - AX_sol, 1st Column Vector 2 norms in mtxR : 0.000392 ~~~
-
-
-
-= = = = end of bfbcgTest = = = =
-*/
+#endif // BFBCG_H
