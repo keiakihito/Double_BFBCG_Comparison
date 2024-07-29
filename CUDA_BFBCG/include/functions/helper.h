@@ -1,15 +1,13 @@
-#ifndef HELPER_FUNCTIONS_H
-#define HELPER_FUNCTIONS_H
+#ifndef HELPER_H
+#define HELPER_H
 
 #include <iostream>
 #include <cuda_runtime.h>
 #include <cstdlib>
-// #include <cmath>
 #include <sys/time.h>
 
 // helper function CUDA error checking and initialization
 #include "../utils/checks.h"  
-
 #include "../CSRMatrix.h"
 
 
@@ -38,6 +36,13 @@ double myCPUTimer()
     return ((double)tp.tv_sec + (double)tp.tv_usec/1.0e6);
 }
 
+template<typename T>
+void check_allocation(const T *val_h){
+    if(val_h == NULL){
+        fprintf(stderr, "\n!!Failed to allocate host memory!!\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 template<typename T>
 void print_vector(const T *d_val, int size) {
@@ -123,4 +128,4 @@ void initializeRandom(double mtxB_h[], int numOfRow, int numOfClm)
 
 
 
-#endif // HELPER_FUNCTIONS_H
+#endif // HELPER_H

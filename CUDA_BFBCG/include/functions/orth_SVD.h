@@ -1,5 +1,5 @@
-#ifndef ORTH_H
-#define ORTH_H
+#ifndef ORTH_SVD_H
+#define ORTH_SVD_H
 
 
 #include <iostream>
@@ -14,31 +14,14 @@
 // helper function CUDA error checking and initialization
 #include "helper.h"
 #include "cuBLAS_util.h"
-// #include "cuSPARSE_util.h"
 #include "cuSOLVER_util.h"
-
-// // Forward Declarations of functions from helper_functions.h
-// void multiply_Den_ClmM_mtxT_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxC_d, int numOfRow, int numOfClm);
-// void multiply_Den_ClmM_mtx_mtx(cublasHandle_t cublasHandler, double* mtxA_d, double* mtxB_d, double* mtxC_d, int numOfRowA, int numOfColB, int numOfColA);
-// double* transpose_Den_Mtx(cublasHandle_t cublasHandler, double* mtxX_d, int numOfRow, int numOfClm);
-
-
-
-// #define CHECK(call){ \
-//     const cudaError_t cuda_ret = call; \
-//     if(cuda_ret != cudaSuccess){ \
-//         printf("Error: %s:%d,  ", __FILE__, __LINE__ );\
-//         printf("code: %d, reason: %s \n", cuda_ret, cudaGetErrorString(cuda_ret));\
-//         exit(-1); \
-//     }\
-// }
 
 
 
 //Input: double* mtxY_hat_d, double* mtxZ, int number of Row, int number Of column, int & currentRank
 //Process: the function extracts orthonormal set from the matrix Z
 //Output: double* mtxY_hat, the orthonormal set of matrix Z.
-void orth(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank);
+void orth_SVD(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank);
 
 
 //For orth sub functions
@@ -70,7 +53,7 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRo
 //Input: double* mtxZ, int number of Row, int number Of column, int & currentRank
 //Process: the function extracts orthonormal set from the matrix Z
 //Output: double* mtxY_hat, the orthonormal set of matrix Z.
-void orth(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank)
+void orth_SVD(double** mtxY_hat_d, double* mtxZ_d, int numOfRow, int numOfClm, int &currentRank)
 {	
 	/*
 	Pseudocode
@@ -386,4 +369,4 @@ void normalize_Den_Mtx(cublasHandle_t cublasHandler, double* mtxY_d, int numOfRo
 
 
 
-#endif // ORTH_H
+#endif // ORTH_SVD_H
