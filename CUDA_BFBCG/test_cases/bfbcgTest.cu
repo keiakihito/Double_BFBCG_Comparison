@@ -1,3 +1,22 @@
+/*
+Personal Note to compile this program in NCSA delta.
+
+1. Srun
+srun --account=bchn-delta-gpu --partition=gpuA40x4-interactive --nodes=1 --gpus-per-node=1 --tasks-per-node=16 --cpus-per-task=1 --mem=20G --pty bash
+
+2. Comile with this long long command
+nvcc bfbcgTest.cu -o bfbcgTest -I/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/cuda-11.8.0-vfixfmc/include -L/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/cuda-11.8.0-vfixfmc/lib64 -lcudart -lcublas -lcusolver -lcusparse -I/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/magma-2.8.0-mvkrj4y/include -L/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/magma-2.8.0-mvkrj4y/lib -L/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/openblas-0.3.25-5yvxjnl/lib -lmagma -lopenblas
+
+3. Set path for magma
+ export LD_LIBRARY_PATH=/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/magma-2.8.0-mvkrj4y/lib:/sw/spack/deltas11-2023-03/apps/linux-rhel8-zen3/gcc-11.4.0/cuda-11.8.0-vfixfmc/lib64:$LD_LIBRARY_PATH
+
+ 4. 
+ ./bfbcgTest
+ */
+
+
+
+
 // includes, system
 #include<stdio.h>
 #include<stdlib.h>
@@ -23,14 +42,7 @@
 
 
 
-// #define CHECK(call){ \
-//     const cudaError_t cuda_ret = call; \
-//     if(cuda_ret != cudaSuccess){ \
-//         printf("Error: %s:%d,  ", __FILE__, __LINE__ );\
-//         printf("code: %d, reason: %s \n", cuda_ret, cudaGetErrorString(cuda_ret));\
-//         exit(-1); \
-//     }\
-// }
+
 
 
 void bfbcgTest_Case1();
@@ -44,20 +56,18 @@ int main(int arg, char** argv)
     
     printf("\n\n= = = =bfbcgTest.cu= = = = \n\n");
     
-    printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
-    bfbcgTest_Case1();
+    // printf("\n\n🔍🔍🔍 Test Case 1 🔍🔍🔍\n\n");
+    // bfbcgTest_Case1();
 
-    printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
-    bfbcgTest_Case2();
+    // printf("\n\n🔍🔍🔍 Test Case 2 🔍🔍🔍\n\n");
+    // bfbcgTest_Case2();
 
-    printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
-    bfbcgTest_Case3();
+    // printf("\n\n🔍🔍🔍 Test Case 3 🔍🔍🔍\n\n");
+    // bfbcgTest_Case3();
 
     printf("\n\n🔍🔍🔍 Test Case 4 🔍🔍🔍\n\n");
     bfbcgTest_Case4();
 
-    // printf("\n\n🔍🔍🔍 Test Case 5 🔍🔍🔍\n\n");
-    // bfbcgTest_Case5();
 
     printf("\n\n= = = = end of bfbcgTest = = = =\n\n");
 
@@ -403,7 +413,7 @@ void bfbcgTest_Case4()
     cudaDeviceSynchronize();
     bool debug = false;
 
-    const int M = 32768;
+    const int M = 32768; // 2^15
     const int K = 32768;
     const int N = 16;
     
